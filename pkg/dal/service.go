@@ -934,3 +934,31 @@ func (svc *service) validateNewSensitivityLevels(levels *sensitivityLevelIndex) 
 	}
 	return
 }
+
+// CreateM
+// @todo rename it to create: Added M/T for now
+// func (m *service) CreateT()  {
+func (svc *service) createM(_ context.Context, ident string, mf ModelRef, meta ModelMeta, operations OperationSet) (out *Model, err error) {
+	out = &Model{
+
+		// it will be primary but connection details will be derived from argument like initService
+		ConnectionID: mf.ConnectionID,
+		// Label:              "",
+		// Resource:           "",
+		// ResourceID:         0,
+		// ResourceType:       "",
+
+		// Not sure what to do here, but initially it should not be an anything else,
+		// but we should add it to meta.Privacy maybe?
+		// SensitivityLevelID: 0,
+
+		Ident:      ident,
+		Attributes: meta.Attributes,
+		Indexes:    meta.Indexes,
+
+		// This either need to be fetched from meta struct or from struct itself
+		Operations: operations,
+	}
+
+	return
+}

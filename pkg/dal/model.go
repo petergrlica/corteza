@@ -31,10 +31,18 @@ type (
 
 		SensitivityLevelID uint64
 
+		// these 2 can be moved to meta, maybe Operations too
 		Attributes AttributeSet
+		Indexes    IndexSet
 
 		Operations OperationSet
 	}
+
+	ModelMeta struct {
+		Attributes AttributeSet
+		Indexes    IndexSet
+	}
+
 	ModelSet []*Model
 
 	// Attribute describes a specific value of the dataset
@@ -69,6 +77,7 @@ type (
 	}
 
 	AttributeSet []*Attribute
+	IndexSet     []*Index
 )
 
 func PrimaryAttribute(ident string, codec Codec) *Attribute {
@@ -200,4 +209,13 @@ func (m Model) Validate() error {
 	}
 
 	return nil
+}
+
+// Prepare will create module meta with minimal info,
+// 		and it will prepare set of attributes and indexes.
+func (meta ModelMeta) Prepare() (out ModelMeta, aSet AttributeSet, iSet IndexSet) {
+	// Stash#7,9 Get the WHITE magic here to get map with attributeName type
+	// 		and same with indexes from argument
+
+	return
 }
