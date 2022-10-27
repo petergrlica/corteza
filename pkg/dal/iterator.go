@@ -3,7 +3,6 @@ package dal
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 
 	"github.com/cortezaproject/corteza-server/pkg/filter"
@@ -67,21 +66,8 @@ func IteratorEncodeJSON(ctx context.Context, w io.Writer, iter Iterator, initTar
 }
 
 // IteratorPaging helper function for record paging cursor and total
-func IteratorPaging(ctx context.Context, iter Iterator, pp *filter.Paging, ss filter.Sorting, fn func(i Iterator) (ValueGetter, bool)) (err error) {
-	if pp == nil {
-		return
-	}
-
-	if pp.PageCursor != nil {
-		if pp.IncPageNavigation || pp.IncTotal {
-			return fmt.Errorf("not allowed to fetch page navigation or total item count with page cursor")
-		}
-	}
-
-	pp.Total = 0
-	pp.PrevPage = nil
-	pp.NextPage = nil
-	pp.PageNavigation = []*filter.Page{}
+func IteratorPaging(ctx context.Context, iter Iterator, infp filter.Paging, fn func(i Iterator) (ValueGetter, bool)) (out filter.Paging, err error) {
+	out.PageNavigation = []*filter.Page{}
 
 	const howMuchMore = 1000
 
@@ -89,7 +75,9 @@ func IteratorPaging(ctx context.Context, iter Iterator, pp *filter.Paging, ss fi
 		counter uint
 		total   uint
 
-		overfetch = pp.IncTotal || pp.IncPageNavigation
+		// when calculating totals or when page navigation needs to be included
+		// we need to fetch ALL records
+		fetchAll = infp.IncTotal || infp.IncPageNavigation
 
 		cur  *filter.PagingCursor
 		page = filter.Page{
@@ -104,6 +92,11 @@ func IteratorPaging(ctx context.Context, iter Iterator, pp *filter.Paging, ss fi
 			return
 		}
 
+		// callback (access-control)
+		//
+		// if user can not read the record
+		// we should not include it in the total count
+		// (and adjust page navigation as well)
 		r, ok := fn(iter)
 		if !ok {
 			continue
@@ -112,10 +105,12 @@ func IteratorPaging(ctx context.Context, iter Iterator, pp *filter.Paging, ss fi
 		counter++
 		total++
 		page.Count++
-		nextPage := pp.Limit > 0 && total%pp.Limit == 0
+		hasNextPage := infp.Limit > 0 && total%infp.Limit == 0
 
-		if pp.PrevPage == nil {
-			pp.PrevPage, err = iter.BackCursor(r)
+		if infp.PageCursor != nil && out.PrevPage == nil {
+			// when input has a cursor + we do not have previous-page-cursor
+			// we need to generate one
+			out.PrevPage, err = iter.BackCursor(r)
 			if err != nil {
 				return
 			}
@@ -127,25 +122,27 @@ func IteratorPaging(ctx context.Context, iter Iterator, pp *filter.Paging, ss fi
 			return
 		}
 
-		// We fetched enough and we don't need count/all pages; end because anything
+		// We fetched enough, we don't need count/all pages; end because anything
 		// extra would be useless processing
-		if nextPage && !overfetch {
-			break
+		if hasNextPage && !fetchAll {
+			// @todo why are we doing this here?
+			//       next-page cursor is not created if we break too early
+			// break
 		}
 
-		// Additional processing only happens when we get to the next page so we can
-		// safely skip it
-		if !nextPage {
+		// Additional processing only happens when we
+		// get to the next page so that we can safely skip it
+		if !hasNextPage {
 			continue
 		}
 
 		// Update paging params for the initial filtering
-		if pp.NextPage == nil {
-			pp.NextPage = cur
+		if out.NextPage == nil {
+			out.NextPage = cur
 		}
 
 		// Paging params for the current chunk
-		pp.PageNavigation = append(pp.PageNavigation, &filter.Page{
+		out.PageNavigation = append(out.PageNavigation, &filter.Page{
 			Page:   page.Page,
 			Count:  page.Count,
 			Cursor: page.Cursor,
@@ -153,15 +150,15 @@ func IteratorPaging(ctx context.Context, iter Iterator, pp *filter.Paging, ss fi
 
 		// Prepare paging params for the next chunk
 		page = filter.Page{
-			Page:   uint(len(pp.PageNavigation) + 1),
+			Page:   uint(len(out.PageNavigation) + 1),
 			Count:  0,
 			Cursor: cur,
 		}
 
 		// Request more
 		// If this was the first page, request more because the limit was exceeded
-		// If this wasn't the first page, request more after we've reached the refetch count
-		if len(pp.PageNavigation) == 1 || counter == howMuchMore {
+		// If this wasn't the first page, request more after we've reached the re-fetch count
+		if len(out.PageNavigation) == 1 || counter == howMuchMore {
 			counter = 0
 
 			// request more items
@@ -173,27 +170,23 @@ func IteratorPaging(ctx context.Context, iter Iterator, pp *filter.Paging, ss fi
 
 	// push the last page to page navigation
 	if page.Count > 0 {
-		pp.PageNavigation = append(pp.PageNavigation, &filter.Page{
+		out.PageNavigation = append(out.PageNavigation, &filter.Page{
 			Page:   page.Page,
 			Count:  page.Count,
 			Cursor: page.Cursor,
 		})
 	}
 
-	if pp.PageCursor == nil {
-		pp.PrevPage = nil
+	if total < infp.Limit {
+		out.NextPage = nil
 	}
 
-	if pp.NextPage != nil && len(pp.PageNavigation) == 1 {
-		pp.NextPage = nil
+	if infp.IncTotal {
+		out.Total = total
 	}
 
-	if pp.IncTotal {
-		pp.Total = total
-	}
-
-	if !pp.IncPageNavigation {
-		pp.PageNavigation = nil
+	if !infp.IncPageNavigation {
+		out.PageNavigation = nil
 	}
 
 	return

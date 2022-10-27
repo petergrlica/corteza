@@ -2,6 +2,7 @@ package dalutils
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/cortezaproject/corteza-server/compose/types"
 	"github.com/cortezaproject/corteza-server/pkg/dal"
@@ -117,6 +118,13 @@ func drainIterator(ctx context.Context, iter dal.Iterator, mod *types.Module, f 
 	// close iterator after we've drained it
 	defer iter.Close()
 
+	if f.PageCursor != nil {
+		if f.IncPageNavigation || f.IncTotal {
+			err = fmt.Errorf("not allowed to fetch page navigation or total item count with page cursor")
+			return
+		}
+	}
+
 	var (
 		r *types.Record
 	)
@@ -130,9 +138,10 @@ func drainIterator(ctx context.Context, iter dal.Iterator, mod *types.Module, f 
 
 	// Make out filter
 	outFilter = f
-	pp := f.Paging.Clone()
 
-	err = dal.IteratorPaging(ctx, iter, pp, f.Sorting, func(i dal.Iterator) (out dal.ValueGetter, ok bool) {
+	// A not-very-clear way of combining record collection with
+	// counting all records and page navigation
+	outFilter.Paging, err = dal.IteratorPaging(ctx, iter, f.Paging, func(i dal.Iterator) (out dal.ValueGetter, ok bool) {
 		r = prepareRecordTarget(mod)
 		if err = i.Scan(r); err != nil {
 			return
@@ -153,11 +162,6 @@ func drainIterator(ctx context.Context, iter dal.Iterator, mod *types.Module, f 
 
 		return r, true
 	})
-	if err != nil {
-		return
-	}
-
-	outFilter.Paging = *pp
 
 	return
 }
