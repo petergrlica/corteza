@@ -133,10 +133,6 @@ func drainIterator(ctx context.Context, iter dal.Iterator, mod *types.Module, f 
 		refetchFactor = 1.2
 	)
 
-	if f.Check == nil {
-		panic("filter check function not set, this is probably a mistake")
-	}
-
 	var (
 		// counter for false checks
 		checked uint
@@ -170,11 +166,13 @@ func drainIterator(ctx context.Context, iter dal.Iterator, mod *types.Module, f 
 			}
 
 			// check fetched record
-			ok, err = f.Check(r)
-			if err != nil {
-				return
-			} else if !ok {
-				continue
+			if f.Check != nil {
+				ok, err = f.Check(r)
+				if err != nil {
+					return
+				} else if !ok {
+					continue
+				}
 			}
 
 			checked++
@@ -225,9 +223,11 @@ func drainIterator(ctx context.Context, iter dal.Iterator, mod *types.Module, f 
 		}
 
 		// check fetched record
-		ok, err = f.Check(r)
-		if err != nil || !ok {
-			return
+		if f.Check != nil {
+			ok, err = f.Check(r)
+			if err != nil || !ok {
+				return
+			}
 		}
 
 		return r, true
@@ -239,7 +239,6 @@ func drainIterator(ctx context.Context, iter dal.Iterator, mod *types.Module, f 
 		if err != nil {
 			return
 		}
-
 	} else {
 		outFilter.Total = uint(len(set))
 	}
