@@ -82,7 +82,7 @@ func IteratorPaging(ctx context.Context, iter Iterator, infp filter.Paging, fn f
 		cur  *filter.PagingCursor
 		page = filter.Page{
 			Page:   1,
-			Count:  0,
+			Count:  infp.Limit,
 			Cursor: nil,
 		}
 	)
@@ -182,6 +182,7 @@ func IteratorPaging(ctx context.Context, iter Iterator, infp filter.Paging, fn f
 	}
 
 	if infp.IncTotal {
+		// @todo cal based on pages
 		out.Total = total
 	}
 

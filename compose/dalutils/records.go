@@ -3,6 +3,7 @@ package dalutils
 import (
 	"context"
 	"fmt"
+	"math"
 
 	"github.com/cortezaproject/corteza-server/compose/types"
 	"github.com/cortezaproject/corteza-server/pkg/dal"
@@ -124,9 +125,24 @@ func drainIterator(ctx context.Context, iter dal.Iterator, mod *types.Module, f 
 			return
 		}
 	}
+	const (
+		// minimum amount of records we need to re-fetch
+		minRefetch = 10
+
+		// refetch 20% more records that we missed
+		refetchFactor = 1.2
+	)
+
+	if f.Check == nil {
+		panic("filter check function not set, this is probably a mistake")
+	}
 
 	var (
-		r *types.Record
+		// counter for false checks
+		checked uint
+		fetched uint
+		ok      bool
+		r       *types.Record
 	)
 
 	// Get the requested number of record
@@ -136,32 +152,97 @@ func drainIterator(ctx context.Context, iter dal.Iterator, mod *types.Module, f 
 		set = make(types.RecordSet, 0, 1000)
 	}
 
+	for f.Limit == 0 || uint(len(set)) < f.Limit {
+		// reset counters every drain
+		checked = 0
+		fetched = 0
+
+		// drain whatever we fetched
+		for iter.Next(ctx) {
+			fetched++
+			if err = iter.Err(); err != nil {
+				return
+			}
+
+			r = prepareRecordTarget(mod)
+			if err = iter.Scan(r); err != nil {
+				return
+			}
+
+			// check fetched record
+			ok, err = f.Check(r)
+			if err != nil {
+				return
+			} else if !ok {
+				continue
+			}
+
+			checked++
+			set = append(set, r)
+		}
+
+		// if an error occurred inside Next(),
+		// we need to stop draining
+		if err = iter.Err(); err != nil {
+			return
+		}
+
+		if fetched == 0 || f.Limit == 0 || (0 < f.Limit && fetched < f.Limit) {
+			// do not re-fetch if:
+			// 1) nothing was fetch in the previous run
+			// 2) there was no limit (everything was fetched)
+			// 3) there are less fetched items then value of limit
+			break
+		}
+
+		// Fetch more records
+		if checked > 0 {
+			howMuchMore := checked
+			if f.Limit > 0 {
+				howMuchMore = f.Limit - uint(len(set))
+			} else {
+				if howMuchMore < minRefetch {
+					howMuchMore = minRefetch
+				}
+
+				howMuchMore = uint(math.Floor(float64(howMuchMore) * refetchFactor))
+			}
+
+			// request more items
+			if err = iter.More(howMuchMore, r); err != nil {
+				return
+			}
+		}
+	}
+
 	// Make out filter
 	outFilter = f
 
-	// A not-very-clear way of combining record collection with
-	// counting all records and page navigation
-	outFilter.Paging, err = dal.IteratorPaging(ctx, iter, f.Paging, func(i dal.Iterator) (out dal.ValueGetter, ok bool) {
+	rCheck := func(iter dal.Iterator) (out dal.ValueGetter, ok bool) {
 		r = prepareRecordTarget(mod)
-		if err = i.Scan(r); err != nil {
+		if err = iter.Scan(r); err != nil {
 			return
 		}
 
 		// check fetched record
-		if f.Check != nil {
-			if ok, err = f.Check(r); err != nil {
-				return nil, false
-			} else if !ok {
-				return nil, ok
-			}
-		}
-
-		if f.Limit == 0 || uint(len(set)) < f.Limit {
-			set = append(set, r)
+		ok, err = f.Check(r)
+		if err != nil || !ok {
+			return
 		}
 
 		return r, true
-	})
+	}
+
+	// Fetch page nav and total
+	if (f.Limit > 0 && f.Limit == uint(len(set))) || f.IncTotal || f.IncPageNavigation {
+		outFilter.Paging, err = dal.IteratorPaging(ctx, iter, f.Paging, rCheck)
+		if err != nil {
+			return
+		}
+
+	} else {
+		outFilter.Total = uint(len(set))
+	}
 
 	return
 }
