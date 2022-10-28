@@ -67,6 +67,12 @@ func IteratorEncodeJSON(ctx context.Context, w io.Writer, iter Iterator, initTar
 
 // IteratorPaging helper function for record paging cursor and total
 func IteratorPaging(ctx context.Context, iter Iterator, infp filter.Paging, fn func(i Iterator) (ValueGetter, bool)) (out filter.Paging, err error) {
+	// @todo: temp fix
+	// it was breaking due to paging was not properly cloned
+	if val := infp.Clone(); val != nil {
+		out = *val
+	}
+
 	out.PageNavigation = []*filter.Page{}
 
 	const howMuchMore = 1000
