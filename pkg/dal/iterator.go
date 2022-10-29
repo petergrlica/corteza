@@ -65,15 +65,27 @@ func IteratorEncodeJSON(ctx context.Context, w io.Writer, iter Iterator, initTar
 	return
 }
 
+// @todo rename GeneratePageNavigation
 // IteratorPaging helper function for record paging cursor and total
-func IteratorPaging(ctx context.Context, iter Iterator, infp filter.Paging, fn func(i Iterator) (ValueGetter, bool)) (out filter.Paging, err error) {
+func IteratorPaging(ctx context.Context, iter Iterator, infp filter.Paging, last ValueGetter, fn func(i Iterator) (ValueGetter, bool)) (out filter.Paging, err error) {
 	// @todo: temp fix
 	// it was breaking due to paging was not properly cloned
 	if val := infp.Clone(); val != nil {
 		out = *val
 	}
 
-	out.PageNavigation = []*filter.Page{}
+	out.PageNavigation = []*filter.Page{
+		{
+			Page:   1,
+			Count:  infp.Limit,
+			Cursor: nil,
+		},
+	}
+
+	out.NextPage, err = iter.ForwardCursor(last)
+	if err != nil {
+		return
+	}
 
 	const howMuchMore = 1000
 
@@ -87,11 +99,15 @@ func IteratorPaging(ctx context.Context, iter Iterator, infp filter.Paging, fn f
 
 		cur  *filter.PagingCursor
 		page = filter.Page{
-			Page:   1,
-			Count:  infp.Limit,
+			Page:   2,
+			Count:  0,
 			Cursor: nil,
 		}
 	)
+
+	if err = iter.More(howMuchMore, last); err != nil {
+		return
+	}
 
 	for iter.Next(ctx) {
 		if err = iter.Err(); err != nil {
@@ -122,13 +138,17 @@ func IteratorPaging(ctx context.Context, iter Iterator, infp filter.Paging, fn f
 			}
 		}
 
-		// cursor for each page
+		// cursor for each record
 		cur, err = iter.ForwardCursor(r)
 		if err != nil {
 			return
 		}
 
-		// We fetched enough, we don't need count/all pages; end because anything
+		// if page.Cursor == nil {
+		// 	page.Cursor = cur
+		// }
+
+		// We fetched enough, we don't need to count/all pages; end because anything
 		// extra would be useless processing
 		if hasNextPage && !fetchAll {
 			// @todo why are we doing this here?
@@ -148,11 +168,167 @@ func IteratorPaging(ctx context.Context, iter Iterator, infp filter.Paging, fn f
 		}
 
 		// Paging params for the current chunk
+		tempP := &filter.Page{
+			Page:   page.Page,
+			Count:  page.Count,
+			Cursor: page.Cursor,
+		}
+		if page.Cursor == nil {
+			tempP.Cursor = out.NextPage
+		}
+		out.PageNavigation = append(out.PageNavigation, tempP)
+
+		// Prepare paging params for the next chunk
+		page = filter.Page{
+			Page:   uint(len(out.PageNavigation) + 1),
+			Count:  0,
+			Cursor: cur,
+		}
+
+		// Request more
+		// If this was the first page, request more because the limit was exceeded
+		// If this wasn't the first page, request more after we've reached the re-fetch count
+		if len(out.PageNavigation) == 1 || counter == howMuchMore {
+			counter = 0
+
+			// request more items
+			if err = iter.More(howMuchMore, r); err != nil {
+				return
+			}
+		}
+	}
+
+	// push the last page to page navigation
+	if page.Count > 0 {
 		out.PageNavigation = append(out.PageNavigation, &filter.Page{
 			Page:   page.Page,
 			Count:  page.Count,
 			Cursor: page.Cursor,
 		})
+	}
+
+	if total < infp.Limit {
+		out.NextPage = nil
+	}
+
+	if infp.IncTotal {
+		// @todo cal based on pages
+		out.Total = total
+	}
+
+	if !infp.IncPageNavigation {
+		out.PageNavigation = nil
+	}
+
+	return
+}
+
+func _IteratorPaging(ctx context.Context, iter Iterator, infp filter.Paging, last ValueGetter, fn func(i Iterator) (ValueGetter, bool)) (out filter.Paging, err error) {
+	// @todo: temp fix
+	// it was breaking due to paging was not properly cloned
+	if val := infp.Clone(); val != nil {
+		out = *val
+	}
+
+	out.PageNavigation = []*filter.Page{
+		{
+			Page:   1,
+			Count:  infp.Limit,
+			Cursor: nil,
+		},
+	}
+
+	out.NextPage, err = iter.ForwardCursor(last)
+	if err != nil {
+		return
+	}
+
+	const howMuchMore = 1000
+
+	var (
+		counter uint
+		total   uint
+
+		// when calculating totals or when page navigation needs to be included
+		// we need to fetch ALL records
+		fetchAll = infp.IncTotal || infp.IncPageNavigation
+
+		cur  *filter.PagingCursor
+		page = filter.Page{
+			Page:   2,
+			Count:  0,
+			Cursor: nil,
+		}
+	)
+
+	if err = iter.More(howMuchMore, last); err != nil {
+		return
+	}
+
+	for iter.Next(ctx) {
+		if err = iter.Err(); err != nil {
+			return
+		}
+
+		// callback (access-control)
+		//
+		// if user can not read the record
+		// we should not include it in the total count
+		// (and adjust page navigation as well)
+		r, ok := fn(iter)
+		if !ok {
+			continue
+		}
+
+		counter++
+		total++
+		page.Count++
+		hasNextPage := infp.Limit > 0 && total%infp.Limit == 0
+
+		if infp.PageCursor != nil && out.PrevPage == nil {
+			// when input has a cursor + we do not have previous-page-cursor
+			// we need to generate one
+			out.PrevPage, err = iter.BackCursor(r)
+			if err != nil {
+				return
+			}
+		}
+
+		// cursor for each record
+		cur, err = iter.ForwardCursor(r)
+		if err != nil {
+			return
+		}
+
+		// We fetched enough, we don't need to count/all pages; end because anything
+		// extra would be useless processing
+		if hasNextPage && !fetchAll {
+			// @todo why are we doing this here?
+			//       next-page cursor is not created if we break too early
+			// break
+		}
+
+		// Additional processing only happens when we
+		// get to the next page so that we can safely skip it
+		if !hasNextPage {
+			continue
+		}
+
+		// Update paging params for the initial filtering
+		if out.NextPage == nil {
+			out.NextPage = cur
+		}
+
+		// Paging params for the current chunk
+		tempP := &filter.Page{
+			Page:   page.Page,
+			Count:  page.Count,
+			Cursor: page.Cursor,
+		}
+		if tempP.Cursor == nil {
+			tempP.Cursor = cur
+		}
+		out.PageNavigation = append(out.PageNavigation, tempP)
 
 		// Prepare paging params for the next chunk
 		page = filter.Page{

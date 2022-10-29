@@ -235,12 +235,15 @@ func drainIterator(ctx context.Context, iter dal.Iterator, mod *types.Module, f 
 
 	// Fetch page nav and total
 	if (f.Limit > 0 && f.Limit == uint(len(set))) || f.IncTotal || f.IncPageNavigation {
-		outFilter.Paging, err = dal.IteratorPaging(ctx, iter, f.Paging, rCheck)
+		outFilter.Paging, err = dal.IteratorPaging(ctx, iter, f.Paging, set[len(set)-1], rCheck)
 		if err != nil {
 			return
 		}
-	} else {
-		outFilter.Total = uint(len(set))
+	}
+
+	if f.IncTotal {
+		// @todo move this to GeneratePageNavigation
+		outFilter.Total += uint(len(set))
 	}
 
 	return
