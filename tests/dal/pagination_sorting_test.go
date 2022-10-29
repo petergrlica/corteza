@@ -17,6 +17,8 @@ import (
 	"time"
 )
 
+var recID = uint64(10000000000000)
+
 func TestSortingAndPagination(t *testing.T) {
 	const (
 		recordsTable = "compose_record"
@@ -119,7 +121,8 @@ func TestSortingAndPagination(t *testing.T) {
 		//
 		makeNew = func(vv ...*types.RecordValue) *types.Record {
 			// minimum data set for new composeRecord
-			var recordID = id.Next()
+			recID++
+			var recordID = recID
 
 			for _, v := range vv {
 				v.RecordID = recordID
@@ -388,6 +391,12 @@ func TestSortingAndPagination(t *testing.T) {
 				f.Limit = 3
 
 				for p := 0; p < 3; p++ {
+					if f.PageCursor != nil {
+						fmt.Println("f.PageCursor: ", f.PageCursor.String())
+					} else {
+						fmt.Println("empty f.PageCursor: ")
+
+					}
 					set, f, err = dalutils.ComposeRecordsList(ctx, ds, mod, f)
 					req.NoError(err)
 					req.True(tc.sort == f.Sort.String() || strings.HasPrefix(f.Sort.String(), tc.sort+","))
@@ -395,8 +404,21 @@ func TestSortingAndPagination(t *testing.T) {
 
 					testCursors(req, tc.curr[p], f)
 
+					if f.PageCursor != nil {
+						fmt.Println("222 f.PageCursor: ", f.PageCursor.String())
+					} else {
+						fmt.Println("222 empty f.PageCursor: ")
+					}
+
 					// advance to next page
 					f.PageCursor = f.NextPage
+
+					if f.PageCursor != nil {
+						fmt.Println("333 f.PageCursor: ", f.PageCursor.String())
+					} else {
+						fmt.Println("333 empty f.PageCursor: ")
+
+					}
 				}
 
 				f.PageCursor = f.PrevPage

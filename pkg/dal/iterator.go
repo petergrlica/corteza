@@ -67,18 +67,23 @@ func IteratorEncodeJSON(ctx context.Context, w io.Writer, iter Iterator, initTar
 
 // @todo rename GeneratePageNavigation
 // IteratorPaging helper function for record paging cursor and total
-func IteratorPaging(ctx context.Context, iter Iterator, infp filter.Paging, last ValueGetter, fn func(i Iterator) (ValueGetter, bool)) (out filter.Paging, err error) {
+func IteratorPaging(ctx context.Context, iter Iterator, infp filter.Paging, first ValueGetter, last ValueGetter, fn func(i Iterator) (ValueGetter, bool)) (out filter.Paging, err error) {
 	// @todo: temp fix
 	// it was breaking due to paging was not properly cloned
 	if val := infp.Clone(); val != nil {
 		out = *val
 	}
 
+	firstCur, err := iter.ForwardCursor(first)
+	if err != nil {
+		return
+	}
+
 	out.PageNavigation = []*filter.Page{
 		{
 			Page:   1,
 			Count:  infp.Limit,
-			Cursor: nil,
+			Cursor: firstCur,
 		},
 	}
 

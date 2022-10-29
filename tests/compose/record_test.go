@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/cortezaproject/corteza-server/pkg/filter"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -138,8 +139,13 @@ func (h helper) repoMakeRecordModuleWithFieldsRequired(name string, ff ...*types
 	return h.makeModule(namespace, name, ff...)
 }
 
+var (
+	recID = uint64(10000)
+)
+
 func (h helper) makeRecord(module *types.Module, rvs ...*types.RecordValue) *types.Record {
-	recID := id.Next()
+	// recID := id.Next()
+	recID++
 	for _, rv := range rvs {
 		rv.RecordID = recID
 	}
@@ -249,6 +255,11 @@ func TestRecordListWithPaginationAndSorting(t *testing.T) {
 					Cursor *string
 				}
 			}
+			// Set []struct {
+			// 	Values []struct{
+			// 		Value string
+			// 	}
+			// }
 		}
 	}{}
 
@@ -274,6 +285,19 @@ func TestRecordListWithPaginationAndSorting(t *testing.T) {
 		Assert(jsonpath.Len(`$.response.filter.pageNavigation`, 4)).
 		End().
 		JSON(&aux)
+
+	// spew.Dump("aux.Response: ", aux.Response)
+
+	for _, pn := range aux.Response.Filter.PageNavigation {
+		fmt.Println("pn XXX: ", pn.Page, pn.Items)
+		if pn.Cursor != nil {
+			var pc filter.PagingCursor
+			_ = pc.Decode(*pn.Cursor)
+			fmt.Println("cursor found: ", pc.String())
+		} else {
+			fmt.Println("Nil cursor")
+		}
+	}
 
 	h.a.Len(aux.Response.Filter.PageNavigation, 4)
 	h.a.NotNil(aux.Response.Filter.PageNavigation[1].Cursor)
@@ -1535,7 +1559,7 @@ func TestRecordLabels(t *testing.T) {
 		req.NotZero(payload.Response.ID)
 
 		// disabled for now
-		//req.Nil(payload.Response.UpdatedAt, "updatedAt must not change after changing labels")
+		// req.Nil(payload.Response.UpdatedAt, "updatedAt must not change after changing labels")
 
 		req.Equal(payload.Response.Meta["foo"], "baz",
 			"meta must contain foo with value baz")

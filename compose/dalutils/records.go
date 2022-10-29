@@ -153,6 +153,8 @@ func drainIterator(ctx context.Context, iter dal.Iterator, mod *types.Module, f 
 		checked = 0
 		fetched = 0
 
+		// @fixme forward cursor not working with sort
+		// Descending works for some reason, ID for cursor o=is working
 		// drain whatever we fetched
 		for iter.Next(ctx) {
 			fetched++
@@ -235,10 +237,13 @@ func drainIterator(ctx context.Context, iter dal.Iterator, mod *types.Module, f 
 
 	// Fetch page nav and total
 	if (f.Limit > 0 && f.Limit == uint(len(set))) || f.IncTotal || f.IncPageNavigation {
-		outFilter.Paging, err = dal.IteratorPaging(ctx, iter, f.Paging, set[len(set)-1], rCheck)
+		fmt.Println("Hola in chainese.....")
+		outFilter.Paging, err = dal.IteratorPaging(ctx, iter, f.Paging, set[0], set[len(set)-1], rCheck)
 		if err != nil {
 			return
 		}
+	} else {
+		fmt.Println("Hola.....")
 	}
 
 	if f.IncTotal {

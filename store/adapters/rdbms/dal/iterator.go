@@ -142,6 +142,7 @@ func (i *iterator) fetch(ctx context.Context) (rows *sql.Rows, err error) {
 				return
 			}
 
+			// fmt.Println("tmp: ", tmp.Expression())
 			if i.aggregated {
 				sqlExpr = sqlExpr.Having(tmp)
 			} else {
@@ -183,6 +184,9 @@ func (i *iterator) fetch(ctx context.Context) (rows *sql.Rows, err error) {
 	if query, args, err = sqlExpr.ToSQL(); err != nil {
 		return nil, err
 	}
+
+	q, _, _ := sqlExpr.Prepared(false).ToSQL()
+	fmt.Println("q: ", q)
 
 	rows, err = i.src.conn.QueryContext(ctx, query, args...)
 	if errors.Is(err, sql.ErrNoRows) {
