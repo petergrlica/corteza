@@ -218,6 +218,9 @@ record:
 recordList:
   addRecord: Add
   cancelSelection: Cancel
+  tooltip:
+    deleteSelected: Delete selected records
+    undeleteSelected: Undelete selected records
   editFields: Editable module fields
   export:
     all: Export all records
@@ -369,6 +372,7 @@ recordList:
     presortLabel: Presort records
     presortPlaceholder: field1 DESC, field2 ASC
     showTotalCount: Show total record count
+    showDeleted: Show option to see deleted records
     openInSameTab: Open records in the same tab
     openInNewTab: Open records in a new tab
     openInModal: Open records in a modal
@@ -388,6 +392,9 @@ recordList:
   selected: '{{count}} of {{total}} records selected'
   sort:
     tooltip: Sort column
+  deletedRecords:
+    listingButton: Show Deleted Records
+    existingButton: Show Existing Records
 recordOrganizer:
   descriptionField:
     footnote: Field value will be used as record description

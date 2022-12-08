@@ -125,17 +125,19 @@
               v-bind="$props"
               @refresh="refresh()"
             />
-            <span v-if="canDeleteSelectedRecords">
+            <span v-if="canDeleteSelectedRecords && !areAllRowsDeleted">
               <c-input-confirm
                 v-if="!inlineEditing"
+                :tooltip="$t('recordList.tooltip.deleteSelected')"
                 class="ml-2"
-                variant="link-light"
                 @confirmed="handleDeleteSelectedRecords()"
               />
               <b-button
-                v-else-if="!areAllRowsDeleted"
+                v-else
                 variant="link"
                 size="md"
+                :title="$t('recordList.tooltip.deleteSelected')"
+                class="text-danger"
                 @click.prevent="handleDeleteSelectedRecords()"
               >
                 <font-awesome-icon
@@ -143,10 +145,24 @@
                   :icon="['far', 'trash-alt']"
                 />
               </b-button>
+            </span>
+
+            <span v-if="canUndeleteSelectedRecords && areAllRowsDeleted">
+              <c-input-confirm
+                v-if="!inlineEditing"
+                :tooltip="$t('recordList.tooltip.undeleteSelected')"
+                class="ml-2"
+                @confirmed="handleRestoreSelectedRecords()"
+              >
+                <font-awesome-icon
+                  :icon="['fa', 'trash-restore']"
+                />
+              </c-input-confirm>
               <b-button
                 v-else
                 variant="link"
                 size="md"
+                :title="$t('recordList.tooltip.undeleteSelected')"
                 class="text-danger"
                 @click.prevent="handleRestoreSelectedRecords()"
               >
@@ -173,7 +189,7 @@
           class="border-top mh-100 h-100 mb-0"
         >
           <b-thead>
-            <b-tr>
+            <b-tr :variant="options.showDeletedRecordsOption && deletedRecordsDisplay ? 'warning' : ''">
               <b-th v-if="options.draggable && inlineEditing" />
               <b-th
                 v-if="options.selectable"
@@ -267,7 +283,6 @@
             <b-tr
               v-for="(item, index) in items"
               :key="`${index}${item.r.recordID}`"
-              :variant="!!item.r.deletedAt ? 'danger' : undefined"
               :class="{ 'pointer': !(options.editable && editing) }"
               @click="handleRowClicked(item)"
             >
@@ -481,7 +496,7 @@
       <b-container
         ref="footer"
         fluid
-        class="m-0 p-2"
+        :class="options.showDeletedRecordsOption && deletedRecordsDisplay ? 'm-0 p-2 bg-warning' : 'm-0 p-2'"
       >
         <b-row no-gutters>
           <b-col class="d-flex justify-content-between align-items-center">
@@ -504,6 +519,7 @@
                 </span>
               </div>
             </div>
+
             <div
               v-if="showPageNavigation && !options.hidePaging && !inlineEditing"
             >
@@ -568,6 +584,32 @@
                   <font-awesome-icon :icon="['fas', 'angle-right']" />
                 </b-button>
               </b-button-group>
+            </div>
+
+            <div v-if="options.showDeletedRecordsOption">
+              <div
+                v-if="deletedRecordsDisplay"
+                class="text-nowrap font-weight-bold"
+              >
+                <b-button
+                  variant="light"
+                  class="mx-2"
+                  @click="handleShowDeleted(false)"
+                >
+                  {{ $t('recordList.deletedRecords.existingButton') }}
+                </b-button>
+              </div>
+              <div
+                v-else
+              >
+                <b-button
+                  variant="light"
+                  class="mx-2"
+                  @click="handleShowDeleted()"
+                >
+                  {{ $t('recordList.deletedRecords.listingButton') }}
+                </b-button>
+              </div>
             </div>
           </b-col>
         </b-row>
@@ -665,6 +707,7 @@ export default {
       items: [],
       idPrefix: `rl:${this.blockIndex}`,
       recordListFilter: [],
+      deletedRecordsDisplay: false,
     }
   },
 
@@ -811,6 +854,10 @@ export default {
       return this.items.filter(({ id, r }) => this.selected.includes(id) && r.canDeleteRecord).length
     },
 
+    canUndeleteSelectedRecords () {
+      return this.items.filter(({ id, r }) => this.selected.includes(id) && r.canUndeleteRecord).length
+    },
+
     newRecordRoute () {
       const refRecord = this.options.linkToParent ? this.record : undefined
       const pageID = this.recordPageID
@@ -925,6 +972,16 @@ export default {
       return isSorted ? { color: 'black' } : {}
     },
 
+    handleShowDeleted (showDeleted = true) {
+      if (showDeleted) {
+        this.deletedRecordsDisplay = true
+      } else {
+        this.deletedRecordsDisplay = false
+      }
+
+      this.refresh(true)
+    },
+
     // Grabs errors specific to this record item
     recordErrors (item, field) {
       if (field) {
@@ -943,7 +1000,6 @@ export default {
       return {
         r,
         id: id || (r.recordID !== NoID ? r.recordID : `${this.idPrefix}:${this.ctr++}`),
-        _rowVariant: r.deletedAt ? 'danger' : undefined,
       }
     },
 
@@ -1209,11 +1265,33 @@ export default {
     },
 
     handleRestoreSelectedRecords () {
-      const sel = new Set(this.selected)
-      for (let i = 0; i < this.items.length; i++) {
-        if (sel.has(this.items[i].id)) {
-          this.handleRestoreInline(this.items[i], i)
+      if (this.inlineEditing) {
+        const sel = new Set(this.selected)
+        for (let i = 0; i < this.items.length; i++) {
+          if (sel.has(this.items[i].id)) {
+            this.handleRestoreInline(this.items[i], i)
+          }
         }
+      } else {
+        const { moduleID, namespaceID } = this.items[0].r
+
+        // filter undeletable records from the selected list
+        const recordIDs = this.items
+          .filter(({ id, r }) => r.canUndeleteRecord && this.selected.includes(id))
+          .map(({ id }) => id)
+
+        this.processing = true
+
+        this.$ComposeAPI
+          .recordBulkUndelete({ moduleID, namespaceID, recordIDs })
+          .then(() => {
+            this.refresh(true)
+            this.toastSuccess(this.$t('notification:record.undeleteBulkSuccess'))
+          })
+          .catch(this.toastErrorHandler(this.$t('notification:record.undeleteBulkFailed')))
+          .finally(() => {
+            this.processing = false
+          })
       }
     },
 
@@ -1293,6 +1371,14 @@ export default {
         paginationOptions = {
           incPageNavigation: fullPageNavigation,
           incTotal: showTotalCount,
+        }
+      }
+
+      if (this.options.showDeletedRecordsOption) {
+        if (this.deletedRecordsDisplay) {
+          this.filter.deleted = 2
+        } else {
+          this.filter.deleted = 0
         }
       }
 

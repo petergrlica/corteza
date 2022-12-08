@@ -236,6 +236,9 @@
         >
           {{ $t('recordList.record.showTotalCount') }}
         </b-form-checkbox>
+        <b-form-checkbox v-model="options.showDeletedRecordsOption">
+          {{ $t('recordList.record.showDeleted') }}
+        </b-form-checkbox>
       </b-form-group>
 
       <b-form-group
