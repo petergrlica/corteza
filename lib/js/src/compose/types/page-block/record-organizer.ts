@@ -10,6 +10,7 @@ interface Options {
   positionField: string;
   groupField: string;
   group: string;
+  tabbed: boolean;
   refreshRate: number;
   refreshEnabled: boolean;
 }
@@ -22,6 +23,7 @@ const defaults: Readonly<Options> = Object.freeze({
   positionField: '',
   groupField: '',
   group: '',
+  tabbed: false,
   refreshRate: 0,
   refreshEnabled: false,
 })
@@ -41,6 +43,7 @@ export class PageBlockRecordOrganizer extends PageBlock {
 
     Apply(this.options, o, CortezaID, 'moduleID')
     Apply(this.options, o, String, 'labelField', 'descriptionField', 'filter', 'positionField', 'groupField', 'group')
+    Apply(this.options, o, Boolean, 'tabbed')
     Apply(this.options, o, Number, 'refreshRate')
     Apply(this.options, o, Boolean, 'refreshEnabled')
   }

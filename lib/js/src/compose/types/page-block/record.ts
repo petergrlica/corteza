@@ -4,10 +4,12 @@ const kind = 'Record'
 
 interface Options {
   fields: unknown[];
+  tabbed: boolean;
 }
 
 const defaults: Readonly<Options> = Object.freeze({
   fields: [],
+  tabbed: false
 })
 
 export class PageBlockRecord extends PageBlock {
@@ -25,6 +27,10 @@ export class PageBlockRecord extends PageBlock {
 
     if (o.fields) {
       this.options.fields = o.fields
+    }
+
+    if (o.tabbed) {
+      this.options.tabbed = o.tabbed
     }
   }
 }

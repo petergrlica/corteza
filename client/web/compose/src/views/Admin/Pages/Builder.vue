@@ -130,17 +130,25 @@
 
     <b-modal
       :title="$t('block.general.title')"
-      :ok-title="$t('build.addBlock')"
-      ok-variant="primary"
       cancel-variant="link"
       :cancel-title="$t('block.general.label.cancel')"
       size="xl"
       :visible="showCreator"
       body-class="p-0 border-top-0"
       header-class="p-3 pb-0 border-bottom-0"
-      @ok="updateBlocks"
       @hide="editor = undefined"
     >
+      <template #modal-ok>
+        <b-button
+          class="p-0"
+          variant="primary"
+          :disabled="isAnyConfiguratorInvalid"
+          @click="updateBlocks"
+        >
+          {{ $t('build.addBlock') }}
+        </b-button>
+      </template>
+
       <configurator
         v-if="showCreator"
         :namespace="namespace"
@@ -153,17 +161,24 @@
 
     <b-modal
       :title="$t('changeBlock')"
-      :ok-title="$t('label.saveAndClose')"
-      ok-variant="primary"
       :cancel-title="$t('label.cancel')"
       cancel-variant="link"
       size="xl"
       :visible="showEditor"
       body-class="p-0 border-top-0"
       header-class="p-3 pb-0 border-bottom-0"
-      @ok="updateBlocks"
       @hide="editor = undefined"
     >
+      <template #modal-ok>
+        <b-button
+          class="p-0"
+          variant="primary"
+          :disabled="isAnyConfiguratorInvalid"
+          @click="updateBlocks"
+        >
+          {{ $t('label.saveAndClose') }}
+        </b-button>
+      </template>
       <configurator
         v-if="showEditor"
         :namespace="namespace"
@@ -272,6 +287,8 @@ export default {
       page: undefined,
       blocks: [],
       board: null,
+      tab: document.getElementById('hello'),
+      isAnyConfiguratorInvalid: false,
     }
   },
 
@@ -358,6 +375,10 @@ export default {
     cloneTooltip () {
       return this.disableClone ? this.$t('tooltip.saveAsCopy') : ''
     },
+
+    pblocs () {
+      return this.page.blocks
+    },
   },
 
   watch: {
@@ -379,12 +400,21 @@ export default {
     },
   },
 
+  created () {
+    this.$root.$on('tab-newBlockRequest', this.fulfilNewBlockRequest)
+    this.$root.$on('tab-editRequest', this.fulfilEditRequest)
+    this.$root.$on('tab-checkState', this.fulfilTabCheckStateRequest)
+  },
+
   mounted () {
     window.addEventListener('paste', this.pasteBlock)
   },
 
   destroyed () {
     window.removeEventListener('paste', this.pasteBlock)
+    this.$root.$off('tab-newBlockRequest')
+    this.$root.$off('tab-editRequest')
+    this.$root.$off('tab-checkState')
   },
 
   methods: {
@@ -397,6 +427,24 @@ export default {
       loadPages: 'page/load',
     }),
 
+    fulfilTabCheckStateRequest () {
+      const isAnyTabUnconfigured = this.editor.block.options.tabs.some((tab) => tab.indexOnMain === null)
+      if (isAnyTabUnconfigured) {
+        this.isAnyConfiguratorInvalid = true
+      } else {
+        this.isAnyConfiguratorInvalid = false
+      }
+    },
+
+    fulfilNewBlockRequest (block) {
+      this.updateBlocks(block)
+    },
+
+    fulfilEditRequest (index) {
+      this.updateBlocks()
+      this.editBlock(index)
+    },
+
     addBlock (block, index = undefined) {
       this.$bvModal.hide('createBlockSelector')
       this.editor = { index, block: compose.PageBlockMaker(block) }
@@ -407,6 +455,19 @@ export default {
     },
 
     deleteBlock (index) {
+      if (this.blocks[index].kind === 'Tab') {
+        const allTabs = this.blocks.filter(({ kind, options }) => kind === 'Tab' && options.blockIndex !== this.blocks[index].options.blockIndex)
+          .map(({ options }) => options.tabs).flat().reduce((unique, o) => {
+            if (!unique.some(tab => tab.indexOnMain === o.indexOnMain)) {
+              unique.push(o)
+            }
+            return unique
+          }, []).map(({ indexOnMain }) => indexOnMain)
+        const tobefreed = this.blocks[index].options.tabs.filter(({ indexOnMain }) => !allTabs.includes(indexOnMain))
+        tobefreed.forEach(({ indexOnMain }) => {
+          this.blocks[indexOnMain].options.tabbed = false
+        })
+      }
       this.blocks.splice(index, 1)
       this.page.blocks = this.blocks
     },
@@ -415,17 +476,73 @@ export default {
       this.blocks = blocks
     },
 
-    updateBlocks () {
-      const block = compose.PageBlockMaker(this.editor.block)
-      this.page.blocks = this.blocks
+    updateBlocks (passedBlock = undefined) {
+      // this is so that a block can be added/updated without using editor path
 
-      if (this.editor.index !== undefined) {
-        this.page.blocks.splice(this.editor.index, 1, block)
+      // because modalEvent gets sent when we emit new block request
+      if (passedBlock && 'block' in passedBlock) {
+        const block = compose.PageBlockMaker(passedBlock.block)
+        this.page.blocks = this.blocks
+
+        if (passedBlock.index !== undefined) {
+          this.page.blocks.splice(passedBlock.index, 1, block)
+        } else {
+          this.page.blocks.push(block)
+        }
+        const blockIndex = this.page.blocks.indexOf(block)
+        this.$root.$emit('tab-newBlockMade', blockIndex)
       } else {
-        this.page.blocks.push(block)
-      }
+        const block = compose.PageBlockMaker(this.editor.block)
+        this.page.blocks = this.blocks
+        let blockIndex
 
-      this.editor = undefined
+        if (this.editor.index !== undefined) {
+          this.page.blocks.splice(this.editor.index, 1, block)
+          blockIndex = this.page.blocks.indexOf(block)
+        } else {
+          this.page.blocks.push(block)
+          blockIndex = this.page.blocks.indexOf(block)
+        }
+
+        if (this.editor.block.kind === 'Tab') {
+          block.options.blockIndex = blockIndex
+        }
+
+        // Updating this block if it is tabbed
+        if (this.editor.block.kind !== 'Tab' && this.editor.block.options.tabbed === true) {
+          const allTabBlocks = this.page.blocks.filter(({ kind }) => kind === 'Tab')
+          allTabBlocks.map(({ options }) => options.tabs).flat().forEach((tab) => {
+            if (tab.indexOnMain === blockIndex) {
+              tab.block = block
+            }
+          })
+        }
+        this.editor = undefined
+      }
+    },
+
+    cloneBlock (index) {
+      this.appendBlock({ ...this.blocks[index] }, this.$t('notification:page.cloneSuccess'))
+    },
+
+    appendBlock (block, msg) {
+      if (this.blocks.length) {
+        // ensuring we append the block to the end of the page
+        // eslint-disable-next-line
+          const maxY = this.blocks.map((block) => block.xywh[1]).reduce((acc, val) => {
+          return acc > val ? acc : val
+        }, 0)
+        block.xywh = [0, maxY + 2, 3, 3]
+      }
+      this.editor = { index: undefined, block: compose.PageBlockMaker(block) }
+      this.updateBlocks()
+      if (!this.editor) {
+        msg && this.toastSuccess(msg)
+        return true
+      } else {
+        msg && this.toastErrorHandler(this.$t('notification:page.duplicateFailed'))
+        return false
+      }
     },
 
     async handleSave ({ closeOnSuccess = false, previewOnSuccess = false } = {}) {
@@ -514,10 +631,6 @@ export default {
       }
 
       return true
-    },
-
-    cloneBlock (index) {
-      this.appendBlock({ ...this.blocks[index] }, this.$t('notification:page.cloneSuccess'))
     },
 
     async copyBlock (index) {

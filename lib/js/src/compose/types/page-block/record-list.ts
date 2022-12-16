@@ -51,6 +51,8 @@ interface Options {
 
   // Ordered list of buttons to display in the block
   selectionButtons: Array<Button>;
+
+  tabbed: boolean;
 }
 
 const defaults: Readonly<Options> = Object.freeze({
@@ -92,6 +94,8 @@ const defaults: Readonly<Options> = Object.freeze({
 
   selectionButtons: [],
   refreshRate: 0,
+  
+  tabbed: false,
   refreshEnabled: false,
 })
 
@@ -143,6 +147,7 @@ export class PageBlockRecordList extends PageBlock {
       'editable',
       'draggable',
       'linkToParent',
+      'tabbed'
       'refreshEnabled',
     )
 

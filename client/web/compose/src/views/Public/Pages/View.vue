@@ -113,6 +113,12 @@ export default {
     },
   },
 
+  data () {
+    return {
+      showFindButton: false,
+    }
+  },
+
   computed: {
     isRecordCreatePage () {
       return this.$route.name === 'page.record.create'
@@ -167,6 +173,7 @@ export default {
       // If on a record page, let it take care of events else just refetch non record-blocks (that use records)
       this.$root.$emit(this.page.moduleID !== NoID ? 'refetch-record-blocks' : `refetch-non-record-blocks:${this.page.pageID}`)
     })
+    this.showFind()
   },
 
   beforeDestroy () {
@@ -177,6 +184,40 @@ export default {
     ...mapActions({
       updatePageSet: 'page/updateSet',
     }),
+
+    showFind () {
+      if (this.$route.query.tabBlockIndex) {
+        this.showFindButton = true
+      }
+    },
+
+    scrollToTab () {
+      const tab = `tab-${this.$route.query.tabBlockIndex}`
+      const block = document.getElementById(tab)
+      if (block) {
+        block.scrollIntoView({ behavior: 'smooth' })
+      }
+      this.showFindButton = false
+    },
   },
 }
 </script>
+
+<style scoped>
+.find-button {
+  position: absolute;
+  bottom: 20%;
+  right: 4%;
+  z-index: 1000;
+}
+
+.v-enter-active,
+.v-leave-active {
+  transition: opacity 0.5s ease;
+}
+
+.v-enter-from,
+.v-leave-to {
+  opacity: 0;
+}
+</style>

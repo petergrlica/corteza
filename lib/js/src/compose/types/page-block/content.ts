@@ -6,10 +6,12 @@ const kind = 'Content'
 interface Options {
   body: string;
   magnifyOption: string
+  tabbed: boolean;
 }
 
 const defaults: Readonly<Options> = Object.freeze({
   body: '',
+  tabbed: false,
   magnifyOption: ''
 })
 
@@ -27,6 +29,7 @@ export class PageBlockContent extends PageBlock {
     if (!o) return
 
     Apply(this.options, o, String, 'body', 'magnifyOption')
+    Apply(this.options, o, Boolean, 'tabbed')
   }
 }
 

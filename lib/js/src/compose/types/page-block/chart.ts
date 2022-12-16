@@ -5,6 +5,7 @@ const kind = 'Chart'
 
 interface Options {
   chartID: string;
+  tabbed: boolean;
   refreshRate: number;
   refreshEnabled: boolean;
   magnifyOption: string;
@@ -12,6 +13,7 @@ interface Options {
 
 const defaults: Readonly<Options> = Object.freeze({
   chartID: NoID,
+  tabbed: false,
   refreshRate: 0,
   magnifyOption: '',
   refreshEnabled: false,
@@ -31,6 +33,7 @@ export class PageBlockChart extends PageBlock {
     if (!o) return
 
     Apply(this.options, o, CortezaID, 'chartID')
+    Apply(this.options, o, Boolean, 'tabbed')
     Apply(this.options, o, Number, 'refreshRate')
     Apply(this.options, o, Boolean, 'refreshEnabled')
     Apply(this.options, o, String, 'magnifyOption')

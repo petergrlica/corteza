@@ -10,12 +10,14 @@ interface Options {
   refreshRate: number;
   refreshEnabled: boolean;
   magnifyOption: string;
+  tabbed: boolean;
 }
 
 const defaults: Readonly<Options> = Object.freeze({
   srcField: '',
   src: '',
   wrap: 'Plain',
+  tabbed: false,
   refreshRate: 0,
   refreshEnabled: false,
   magnifyOption: '',
@@ -36,6 +38,7 @@ export class PageBlockIFrame extends PageBlock {
 
     Apply(this.options, o, String, 'srcField', 'src', 'wrap', 'magnifyOption')
     Apply(this.options, o, Number, 'refreshRate')
+    Apply(this.options, o, Boolean, 'tabbed')
     Apply(this.options, o, Boolean, 'refreshEnabled')
   }
 }

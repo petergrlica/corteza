@@ -34,6 +34,7 @@ interface Options {
   maxValue: ValueOptions;
   display: DisplayOptions;
   refreshRate: number;
+  tabbed: boolean;
   refreshEnabled: boolean;
 }
 
@@ -70,6 +71,7 @@ const defaults: Readonly<Options> = Object.freeze({
     variant: 'success',
     thresholds: [],
   },
+  tabbed: false,
   refreshRate: 0,
   refreshEnabled: false,
 })
@@ -103,7 +105,7 @@ export class PageBlockProgress extends PageBlock {
     }
 
     if (o.display) {
-      this.options.display = { ...this.options.display, ...o.display }
+      this.options.display = o.display
     }
   }
 

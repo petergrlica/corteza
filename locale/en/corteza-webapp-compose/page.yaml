@@ -67,3 +67,6 @@ public:
       title: Editing record for module "{{name}}"
     view:
       title: Viewing record for module "{{name}}"
+blockSpecific:
+  tab:
+    findTab: Find tab
