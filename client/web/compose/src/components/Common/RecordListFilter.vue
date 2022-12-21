@@ -84,7 +84,7 @@
                     <b-form-select
                       v-if="getField(filter.name)"
                       v-model="filter.operator"
-                      :options="getOperators(filter.kind)"
+                      :options="getOperators(filter.kind, getField(filter.name))"
                       class="d-flex field-operator w-100"
                     />
                   </b-td>
@@ -97,6 +97,7 @@
                       value-only
                       :field="getField(filter.name)"
                       :record="filter.record"
+                      :operator="filter.operator"
                       @change="onValueChange"
                     />
                   </b-td>
@@ -344,7 +345,7 @@ export default {
       this.onValueChange()
     },
 
-    getOperators (kind) {
+    getOperators (kind, field) {
       const operators = [
         {
           value: '=',
@@ -356,7 +357,7 @@ export default {
         },
       ]
 
-      const inOperators = [
+      const inOperators = field.isMulti ? [
         {
           value: 'IN',
           text: this.$t('recordList.filter.operators.contains'),
@@ -365,7 +366,8 @@ export default {
           value: 'NOT IN',
           text: this.$t('recordList.filter.operators.notContains'),
         },
-      ]
+      ] : []
+
       const lgOperators = [
         {
           value: '>',
@@ -386,10 +388,20 @@ export default {
           text: this.$t('recordList.filter.operators.notLike'),
         },
       ]
+      const betweenOperators = [
+        {
+          value: 'BETWEEN',
+          text: "BETWEEN",
+        },
+        {
+          value: 'NOT BETWEEN',
+          text: "NOT BETWEEN",
+        },
+      ]
 
       switch (kind) {
         case 'Number':
-          return [...operators, ...inOperators, ...lgOperators]
+          return [...operators, ...inOperators, ...lgOperators, ...betweenOperators]
 
         case 'DateTime':
           return [...operators, ...lgOperators]
@@ -397,7 +409,7 @@ export default {
         case 'String':
         case 'Url':
         case 'Email':
-          return [...operators, ...inOperators, ...lgOperators, ...matchOperators]
+          return [...operators, ...inOperators, ...matchOperators]
 
         default:
           return operators

@@ -61,6 +61,11 @@ export default {
       type: Boolean,
       default: true,
     },
+
+    operator: {
+      type: String,
+      default: ""
+    }
   },
 
   computed: {
