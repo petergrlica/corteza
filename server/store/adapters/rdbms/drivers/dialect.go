@@ -189,5 +189,5 @@ func opHandlerIn(d Dialect, n *ql.ASTNode, negate bool, args ...exp.Expression) 
 		return
 	}
 
-	return nil, fmt.Errorf("unsupported IN operator")
+	return nil, fmt.Errorf("unsupported IN operator on a single value field")
 }
