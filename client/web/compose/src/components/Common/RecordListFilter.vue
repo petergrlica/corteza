@@ -388,20 +388,10 @@ export default {
           text: this.$t('recordList.filter.operators.notLike'),
         },
       ]
-      const betweenOperators = [
-        {
-          value: 'BETWEEN',
-          text: "BETWEEN",
-        },
-        {
-          value: 'NOT BETWEEN',
-          text: "NOT BETWEEN",
-        },
-      ]
 
       switch (kind) {
         case 'Number':
-          return [...operators, ...inOperators, ...lgOperators, ...betweenOperators]
+          return [...operators, ...inOperators, ...lgOperators]
 
         case 'DateTime':
           return [...operators, ...lgOperators]

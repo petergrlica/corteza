@@ -1,14 +1,29 @@
 <template>
-  <b-form-group label-class="text-primary" :class="formGroupStyleClasses">
-    <template v-if="!valueOnly" #label>
-      <div class="d-flex align-items-top">
-        <label class="mb-0">
+  <b-form-group
+    label-class="text-primary"
+    :class="formGroupStyleClasses"
+  >
+    <template
+      v-if="!valueOnly"
+      #label
+    >
+      <div
+        class="d-flex align-items-top"
+      >
+        <label
+          class="mb-0"
+        >
           {{ label }}
         </label>
 
-        <hint :id="field.fieldID" :text="hint" />
+        <hint
+          :id="field.fieldID"
+          :text="hint"
+        />
       </div>
-      <small class="form-text font-weight-light text-muted">
+      <small
+        class="form-text font-weight-light text-muted"
+      >
         {{ description }}
       </small>
     </template>
@@ -38,35 +53,20 @@
       :prepend="field.options.prefix"
       :append="field.options.suffix"
     >
-      <template v-if="operator === 'range'">
-        <div class="d-flex">
-          <b-input-group style="width: 150px">
-            <b-form-input
-              placeholder="Start"
-              autocomplete="off"
-              type="number"
-              number
-            />
-            <b-form-input
-              placeholder="End"
-              autocomplete="off"
-              type="number"
-              number
-            />
-          </b-input-group>
-        </div>
-      </template>
-      <template v-else>
-        <b-form-input v-model="value" autocomplete="off" type="number" number />
-      </template>
+      <b-form-input
+        v-model="value"
+        autocomplete="off"
+        type="number"
+        number
+      />
     </b-input-group>
     <errors :errors="errors" />
   </b-form-group>
 </template>
 <script>
-import base from "./base";
+import base from './base'
 
 export default {
   extends: base,
-};
+}
 </script>
