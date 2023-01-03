@@ -613,7 +613,7 @@ tab:
   displayTitle: Display Options
   preview: Live example
   newBlockModal: Add new block
-  tabStyle:
+  style:
     appearance:
       tabs: Tabs
       pills: Pills

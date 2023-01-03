@@ -36,8 +36,8 @@ import NylasBase from './Nylas/NylasBase'
 import NylasConfigurator from './Nylas/NylasConfigurator'
 import GeometryBase from './GeometryBase'
 import GeometryConfigurator from './GeometryConfigurator/index'
-import TabBase from './TabBase'
-import TabConfigurator from './TabConfigurator'
+import TabsBase from './TabsBase'
+import TabsConfigurator from './TabsConfigurator'
 
 /**
  * List of all known page block components
@@ -79,8 +79,8 @@ const Registry = {
   NylasConfigurator,
   GeometryBase,
   GeometryConfigurator,
-  TabBase,
-  TabConfigurator,
+  TabsBase,
+  TabsConfigurator,
 }
 
 const defaultMode = 'Base'

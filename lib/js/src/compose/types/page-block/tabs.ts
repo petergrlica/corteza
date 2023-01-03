@@ -1,28 +1,27 @@
 import { PageBlock, PageBlockInput, Registry } from './base'
 import { Apply } from '../../../cast'
 
-const kind = 'Tab'
+const kind = 'Tabs'
 
 interface Style {
   appearance: string;
   alignment: string;
   fillJustify: string;
   verticalHorizontal: string;
-  tabPosition: string;
 }
+
 interface Options {
-  tabStyle: Style;
+  style: Style;
   tabs: any[];
   blockIndex: any;
 }
 
 const defaults: Readonly<Options> = Object.freeze({
-  tabStyle: {
+  style: {
     appearance: 'tabs',
     alignment: 'start',
     fillJustify: '',
     verticalHorizontal: '',
-    tabPosition: '',
   },
   tabs: [],
   blockIndex: null,
@@ -47,8 +46,8 @@ export class PageBlockTab extends PageBlock {
       this.options.tabs = o.tabs
     }
 
-    if (o.tabStyle) {
-      this.options.tabStyle = o.tabStyle
+    if (o.style) {
+      this.options.style = o.style
     }
 
   }

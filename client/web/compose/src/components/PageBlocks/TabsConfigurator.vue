@@ -1,5 +1,5 @@
 <template>
-  <b-tab title="TabConfigurator">
+  <b-tab title="Tab">
     <div
       v-if="alert"
       class="custom-warning text-h3"
@@ -183,11 +183,11 @@
         <b-form-group label="Appearance">
           <b-form-radio-group
             id="appearance"
-            v-model="block.options.tabStyle.appearance"
+            v-model="block.options.style.appearance"
             buttons
             button-variant="outline-primary"
             size="sm"
-            :options="tabStyle.appearance"
+            :options="style.appearance"
             name="display-options"
           />
         </b-form-group>
@@ -195,22 +195,22 @@
         <b-form-group label="Alignment">
           <b-form-radio-group
             id="alignment"
-            v-model="block.options.tabStyle.alignment"
+            v-model="block.options.style.alignment"
             buttons
             button-variant="outline-primary"
             size="sm"
-            :options="tabStyle.alignment"
+            :options="style.alignment"
             name="display-options"
           />
         </b-form-group>
         <b-form-group label="Fill or Justify">
           <b-form-radio-group
             id="fillJustify"
-            v-model="block.options.tabStyle.fillJustify"
+            v-model="block.options.style.fillJustify"
             buttons
             button-variant="outline-primary"
             size="sm"
-            :options="tabStyle.fillJustify"
+            :options="style.fillJustify"
             name="display-options"
           />
         </b-form-group>
@@ -218,23 +218,11 @@
         <b-form-group label="Vertical or Horizontal">
           <b-form-radio-group
             id="verticalHorizontal"
-            v-model="block.options.tabStyle.verticalHorizontal"
+            v-model="block.options.style.verticalHorizontal"
             buttons
             button-variant="outline-primary"
             size="sm"
-            :options="tabStyle.verticalHorizontal"
-            name="display-options"
-          />
-        </b-form-group>
-
-        <b-form-group label="Tab Position">
-          <b-form-radio-group
-            id="tabPosition"
-            v-model="block.options.tabStyle.tabPosition"
-            buttons
-            button-variant="outline-primary"
-            size="sm"
-            :options="tabStyle.tabPosition"
+            :options="style.verticalHorizontal"
             name="display-options"
           />
         </b-form-group>
@@ -252,14 +240,13 @@
 
         <b-tabs
           v-bind="{
-            align: block.options.tabStyle.alignment,
-            fill: block.options.tabStyle.fillJustify === 'fill',
-            justified: block.options.tabStyle.fillJustify === 'justified',
-            pills: block.options.tabStyle.appearance === 'pills',
-            tabs: block.options.tabStyle.appearance === 'tabs',
-            small: block.options.tabStyle.appearance === 'small',
-            vertical: block.options.tabStyle.verticalHorizontal === 'vertical',
-            end: block.options.tabStyle.tabPosition === 'end',
+            align: block.options.style.alignment,
+            fill: block.options.style.fillJustify === 'fill',
+            justified: block.options.style.fillJustify === 'justified',
+            pills: block.options.style.appearance === 'pills',
+            tabs: block.options.style.appearance === 'tabs',
+            small: block.options.style.appearance === 'small',
+            vertical: block.options.style.verticalHorizontal === 'vertical',
           }"
         >
           <b-tab
@@ -286,6 +273,7 @@
     </b-modal>
   </b-tab>
 </template>
+
 <script>
 import base from './base'
 import draggable from 'vuedraggable'
@@ -296,6 +284,7 @@ export default {
   },
 
   name: 'TabConfigurator',
+
   components: {
     //  Importing like this because configurator is recursive
     NewBlockSelector: () => import('corteza-webapp-compose/src/components/Admin/Page/Builder/Selector'),
@@ -311,33 +300,33 @@ export default {
       tabWarning: false,
       msg: '',
       editFocused: false,
-      tabStyle: {
+      style: {
         appearance: [
-          { text: this.$t('tab.tabStyle.appearance.tabs'), value: 'tabs' },
-          { text: this.$t('tab.tabStyle.appearance.pills'), value: 'pills' },
-          { text: this.$t('tab.tabStyle.appearance.small'), value: 'small' },
+          { text: this.$t('tab.style.appearance.tabs'), value: 'tabs' },
+          { text: this.$t('tab.style.appearance.pills'), value: 'pills' },
+          { text: this.$t('tab.style.appearance.small'), value: 'small' },
         ],
 
         alignment: [
-          { text: this.$t('tab.tabStyle.alignment.left'), value: 'left' },
-          { text: this.$t('tab.tabStyle.alignment.center'), value: 'center' },
-          { text: this.$t('tab.tabStyle.alignment.right'), value: 'right' },
+          { text: this.$t('tab.style.alignment.left'), value: 'left' },
+          { text: this.$t('tab.style.alignment.center'), value: 'center' },
+          { text: this.$t('tab.style.alignment.right'), value: 'right' },
         ],
 
         fillJustify: [
-          { text: this.$t('tab.tabStyle.fillJustify.fill'), value: 'fill' },
-          { text: this.$t('tab.tabStyle.fillJustify.justified'), value: 'justified' },
-          { text: this.$t('tab.tabStyle.fillJustify.none'), value: '' },
+          { text: this.$t('tab.style.fillJustify.fill'), value: 'fill' },
+          { text: this.$t('tab.style.fillJustify.justified'), value: 'justified' },
+          { text: this.$t('tab.style.fillJustify.none'), value: '' },
         ],
 
         verticalHorizontal: [
-          { text: this.$t('tab.tabStyle.verticalHorizontal.vertical'), value: 'vertical' },
-          { text: this.$t('tab.tabStyle.verticalHorizontal.horizontal'), value: 'none' },
+          { text: this.$t('tab.style.verticalHorizontal.vertical'), value: 'vertical' },
+          { text: this.$t('tab.style.verticalHorizontal.horizontal'), value: 'none' },
         ],
 
         tabPosition: [
-          { text: this.$t('tab.tabStyle.tabPosition.top'), value: '' },
-          { text: this.$t('tab.tabStyle.tabPosition.bottom'), value: 'end' },
+          { text: this.$t('tab.style.tabPosition.top'), value: '' },
+          { text: this.$t('tab.style.tabPosition.bottom'), value: 'end' },
         ],
       },
       tabMode: [],

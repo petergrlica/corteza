@@ -8,14 +8,13 @@
       v-if="options.tabs.length"
       v-model="activeTab"
       v-bind="{
-        align: options.tabStyle.alignment,
-        fill: options.tabStyle.fillJustify === 'fill',
-        justified: options.tabStyle.fillJustify === 'justified',
-        pills: options.tabStyle.appearance === 'pills',
-        tabs: options.tabStyle.appearance === 'tabs',
-        small: options.tabStyle.appearance === 'small',
-        vertical: options.tabStyle.verticalHorizontal === 'vertical',
-        end: options.tabStyle.tabPosition === 'end',
+        align: options.style.alignment,
+        fill: options.style.fillJustify === 'fill',
+        justified: options.style.fillJustify === 'justified',
+        pills: options.style.appearance === 'pills',
+        tabs: options.style.appearance === 'tabs',
+        small: options.style.appearance === 'small',
+        vertical: options.style.verticalHorizontal === 'vertical',
       }"
     >
       <b-tab
@@ -48,11 +47,14 @@
 <script>
 import base from './base'
 import { compose } from '@cortezaproject/corteza-js'
+
 export default {
   i18nOptions: {
     namespaces: 'block',
   },
+
   name: 'TabBase',
+
   components: {
     PageBlockTab: () => import('corteza-webapp-compose/src/components/PageBlocks'),
   },
