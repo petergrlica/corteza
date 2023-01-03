@@ -337,7 +337,7 @@ export default {
 
     options () {
       return this.page.blocks.flatMap((block, index) => {
-        if (block.kind === 'Tab') {
+        if (block.kind === 'Tabs') {
           return []
         }
 
@@ -400,7 +400,7 @@ export default {
     },
 
     updateTabs (tab, tabIndex) {
-      if (tab.block.kind === 'Tab') {
+      if (tab.block.kind === 'Tabs') {
         return
       }
       this.block.options.tabs[tabIndex] = tab
@@ -429,7 +429,7 @@ export default {
     },
 
     editBlock (index = undefined) {
-      const isTabAddedToPage = this.page.blocks.filter(({ kind }) => kind === 'Tab')
+      const isTabAddedToPage = this.page.blocks.filter(({ kind }) => kind === 'Tabs')
         .find(({ options }) => options.blockIndex === this.block.options.blockIndex)
       if (!isTabAddedToPage) {
         this.alert = true
@@ -469,7 +469,7 @@ export default {
     },
 
     determineTabOccurrence (tab) {
-      const allTabs = this.page.blocks.filter(({ kind, options }) => kind === 'Tab' && options.blockIndex !== this.block.options.blockIndex)
+      const allTabs = this.page.blocks.filter(({ kind, options }) => kind === 'Tabs' && options.blockIndex !== this.block.options.blockIndex)
         .concat(this.block)
         .map(({ options }) => options.tabs).flat().map(({ indexOnMain }) => indexOnMain)
       const tabOccurrence = allTabs.filter((t) => t === tab.indexOnMain).length

@@ -455,8 +455,8 @@ export default {
     },
 
     deleteBlock (index) {
-      if (this.blocks[index].kind === 'Tab') {
-        const allTabs = this.blocks.filter(({ kind, options }) => kind === 'Tab' && options.blockIndex !== this.blocks[index].options.blockIndex)
+      if (this.blocks[index].kind === 'Tabs') {
+        const allTabs = this.blocks.filter(({ kind, options }) => kind === 'Tabs' && options.blockIndex !== this.blocks[index].options.blockIndex)
           .map(({ options }) => options.tabs).flat().reduce((unique, o) => {
             if (!unique.some(tab => tab.indexOnMain === o.indexOnMain)) {
               unique.push(o)
@@ -504,13 +504,13 @@ export default {
           blockIndex = this.page.blocks.indexOf(block)
         }
 
-        if (this.editor.block.kind === 'Tab') {
+        if (this.editor.block.kind === 'Tabs') {
           block.options.blockIndex = blockIndex
         }
 
         // Updating this block if it is tabbed
-        if (this.editor.block.kind !== 'Tab' && this.editor.block.options.tabbed === true) {
-          const allTabBlocks = this.page.blocks.filter(({ kind }) => kind === 'Tab')
+        if (this.editor.block.kind !== 'Tabs' && this.editor.block.options.tabbed === true) {
+          const allTabBlocks = this.page.blocks.filter(({ kind }) => kind === 'Tabs')
           allTabBlocks.map(({ options }) => options.tabs).flat().forEach((tab) => {
             if (tab.indexOnMain === blockIndex) {
               tab.block = block

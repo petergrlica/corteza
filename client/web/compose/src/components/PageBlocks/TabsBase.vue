@@ -24,7 +24,7 @@
         @click="updateBlock(index)"
       >
         <page-block-tab
-          v-if="tab.block.kind !== 'Tab'"
+          v-if="tab.block.kind !== 'Tabs'"
           :key="key"
           v-bind="{ ...$attrs, ...$props, page, block: compose().PageBlockMaker(tab.block), blockIndex: index }"
           :record="record"

@@ -199,6 +199,6 @@ export default {
 
 <style scoped>
 .chartHeight {
-  height: 20rem;
+  min-height: 20rem;
 }
 </style>
