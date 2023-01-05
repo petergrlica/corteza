@@ -1,5 +1,8 @@
 <template>
-  <div class="d-flex flex-column align-items-center justify-content-center chartHeight position-relative">
+  <div
+    style="min-height: 20rem"
+    class="d-flex flex-column align-items-center justify-content-center position-relative"
+  >
     <div
       v-if="processing"
       class="d-flex flex-column align-items-center justify-content-center flex-fill"
@@ -196,9 +199,3 @@ export default {
   },
 }
 </script>
-
-<style scoped>
-.chartHeight {
-  min-height: 20rem;
-}
-</style>

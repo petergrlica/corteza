@@ -1,6 +1,5 @@
 <template>
   <wrap
-    :id="`tab-${options.blockIndex}`"
     v-bind="$props"
     v-on="$listeners"
   >
@@ -21,11 +20,10 @@
         v-for="(tab, index) in options.tabs"
         :key="index"
         :title="tab.block.title"
-        @click="updateBlock(index)"
+        @click="trackTab(index)"
       >
         <page-block-tab
-          v-if="tab.block.kind !== 'Tabs'"
-          :key="key"
+          v-if="index === activeTab"
           v-bind="{ ...$attrs, ...$props, page, block: compose().PageBlockMaker(tab.block), blockIndex: index }"
           :record="record"
           :module="module"
@@ -63,32 +61,23 @@ export default {
   data () {
     return {
       compose: () => compose,
-      key: 0,
       activeTab: 0,
     }
   },
 
   watch: {
     '$route.query': {
+      immediate: true,
+
       handler (query) {
         this.changeActiveTab(query)
       },
     },
   },
 
-  created () {
-    const { tabIndex, tabBlockIndex } = this.$route.query
-    this.changeActiveTab({ tabBlockIndex, tabIndex })
-  },
-
   methods: {
-    // Because some of the blocks are not reactive, we need to force them to update
-    updateBlock (index) {
-      this.key++
-      if (this.$route.query.tabIndex === index && this.$route.query.tabBlockIndex === this.options.blockIndex) {
-        return
-      }
-      this.$router.push({ path: this.$route.fullPath, query: { tabBlockIndex: this.options.blockIndex, tabIndex: index } })
+    trackTab (index) {
+      this.$router.replace({ query: { tabBlockIndex: this.options.blockIndex, tabIndex: index } })
     },
 
     changeActiveTab (query) {

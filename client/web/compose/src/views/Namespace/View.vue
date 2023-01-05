@@ -1,6 +1,5 @@
 <template>
   <div
-    id="namespace-view"
     class="d-flex w-100"
   >
     <router-view

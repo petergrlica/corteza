@@ -150,9 +150,9 @@ export default {
           image: images.Geometry,
         },
         {
-          label: this.$t('tab.label'),
+          label: this.$t('tabs.label'),
           block: new compose.PageBlockTab(),
-          image: images.Tab,
+          image: images.Tabs,
         },
       ],
     }

@@ -13,17 +13,17 @@
       <h3
         class="font-weight-light text-primary"
       >
-        {{ $t('tab.title') }}
+        {{ $t('tabs.title') }}
       </h3>
 
       <b-button
         variant="link"
         size="lg"
-        :title="$t('tab.tooltip.addTab')"
+        :title="$t('tabs.tooltip.addTab')"
         class="h3"
         @click="Add"
       >
-        {{ $t('tab.addTab') }}
+        {{ $t('tabs.addTab') }}
       </b-button>
     </div>
 
@@ -44,7 +44,7 @@
             >
               <b-button
                 variant="link"
-                :title="$t('tab.tooltip.move')"
+                :title="$t('tabs.tooltip.move')"
               >
                 <font-awesome-icon
                   :icon="['fas', 'bars']"
@@ -80,7 +80,7 @@
                         :value="null"
                         disabled
                       >
-                        {{ $t('tab.selectBlock') }}
+                        {{ $t('tabs.selectBlock') }}
                       </b-form-select-option>
                     </template>
                   </b-form-select>
@@ -95,7 +95,7 @@
 
               <b-button
                 v-if="tabMode[index] === 'view'"
-                :title="$t('tab.tooltip.changeTab')"
+                :title="$t('tabs.tooltip.changeTab')"
                 variant="link"
                 class="mb-2"
                 @click="switchTabMode(index, 'choose')"
@@ -107,7 +107,7 @@
 
               <b-button
                 v-if="tabMode[index] === 'choose'"
-                :title="$t('tab.tooltip.cancel')"
+                :title="$t('tabs.tooltip.cancel')"
                 variant="link"
                 class="mb-3"
                 @click="switchTabMode(index, 'view')"
@@ -129,7 +129,7 @@
                   v-if="(tab.indexOnMain !== null)"
                   id="popover-edit"
                   size="md"
-                  :title="$t('tab.tooltip.edit')"
+                  :title="$t('tabs.tooltip.edit')"
                   variant="link"
                   @click="editBlock(tab.indexOnMain)"
                 >
@@ -155,7 +155,7 @@
       class="text-center pt-5 pb-5"
     >
       <h5>
-        {{ $t('tab.noTabs') }}
+        {{ $t('tabs.noTabs') }}
       </h5>
     </div>
 
@@ -164,16 +164,16 @@
         <b-button
           v-b-modal.createBlockSelectorTab
           variant="primary"
-          :title="$t('tab.tooltip.newBlock')"
+          :title="$t('tabs.tooltip.newBlock')"
         >
-          {{ $t('tab.newBlock') }}
+          {{ $t('tabs.newBlock') }}
         </b-button>
       </b-col>
     </b-row>
 
     <div class="mt-5 pt-3">
       <h3 class="text-primary">
-        {{ $t('tab.displayTitle') }}
+        {{ $t('tabs.displayTitle') }}
       </h3>
 
       <b-row
@@ -235,7 +235,7 @@
       >
         <!-- locale here -->
         <h6 class="text-primary">
-          {{ $t('tab.preview') }}
+          {{ $t('tabs.preview') }}
         </h6>
 
         <b-tabs
@@ -264,7 +264,7 @@
       size="lg"
       scrollable
       hide-footer
-      :title="$t('tab.newBlockModal')"
+      :title="$t('tabs.newBlockModal')"
     >
       <new-block-selector
         :record-page="!!module"
@@ -302,31 +302,31 @@ export default {
       editFocused: false,
       style: {
         appearance: [
-          { text: this.$t('tab.style.appearance.tabs'), value: 'tabs' },
-          { text: this.$t('tab.style.appearance.pills'), value: 'pills' },
-          { text: this.$t('tab.style.appearance.small'), value: 'small' },
+          { text: this.$t('tabs.style.appearance.tabs'), value: 'tabs' },
+          { text: this.$t('tabs.style.appearance.pills'), value: 'pills' },
+          { text: this.$t('tabs.style.appearance.small'), value: 'small' },
         ],
 
         alignment: [
-          { text: this.$t('tab.style.alignment.left'), value: 'left' },
-          { text: this.$t('tab.style.alignment.center'), value: 'center' },
-          { text: this.$t('tab.style.alignment.right'), value: 'right' },
+          { text: this.$t('tabs.style.alignment.left'), value: 'left' },
+          { text: this.$t('tabs.style.alignment.center'), value: 'center' },
+          { text: this.$t('tabs.style.alignment.right'), value: 'right' },
         ],
 
         fillJustify: [
-          { text: this.$t('tab.style.fillJustify.fill'), value: 'fill' },
-          { text: this.$t('tab.style.fillJustify.justified'), value: 'justified' },
-          { text: this.$t('tab.style.fillJustify.none'), value: '' },
+          { text: this.$t('tabs.style.fillJustify.fill'), value: 'fill' },
+          { text: this.$t('tabs.style.fillJustify.justified'), value: 'justified' },
+          { text: this.$t('tabs.style.fillJustify.none'), value: '' },
         ],
 
         verticalHorizontal: [
-          { text: this.$t('tab.style.verticalHorizontal.vertical'), value: 'vertical' },
-          { text: this.$t('tab.style.verticalHorizontal.horizontal'), value: 'none' },
+          { text: this.$t('tabs.style.verticalHorizontal.vertical'), value: 'vertical' },
+          { text: this.$t('tabs.style.verticalHorizontal.horizontal'), value: 'none' },
         ],
 
         tabPosition: [
-          { text: this.$t('tab.style.tabPosition.top'), value: '' },
-          { text: this.$t('tab.style.tabPosition.bottom'), value: 'end' },
+          { text: this.$t('tabs.style.tabPosition.top'), value: '' },
+          { text: this.$t('tabs.style.tabPosition.bottom'), value: 'end' },
         ],
       },
       tabMode: [],
@@ -377,7 +377,7 @@ export default {
 
       if (!this.page.blocks[blockToTab].title) {
         this.tabWarning = true
-        this.msg = this.$t('tab.alertTitle')
+        this.msg = this.$t('tabs.alertTitle')
         setTimeout(() => {
           this.tabWarning = false
         }, 3000)
@@ -433,7 +433,7 @@ export default {
         .find(({ options }) => options.blockIndex === this.block.options.blockIndex)
       if (!isTabAddedToPage) {
         this.alert = true
-        this.msg = this.$t('tab.alertSave')
+        this.msg = this.$t('tabs.alertSave')
         setTimeout(() => {
           this.alert = false
         }, 1500)

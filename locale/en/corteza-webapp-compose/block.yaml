@@ -601,7 +601,7 @@ geometry:
     topLeft: Bounds top left
     lowerRight: Bounds lower right
 
-tab:
+tabs:
   alertSave: Tab blocks require you to save them first before you can edit them!
   alertTitle: Set a title for your block!
   title: Tabbed blocks
@@ -639,4 +639,4 @@ tab:
     cancel: Switch to view mode
     newBlock: Add new block
     move: Move tab
-  label: Tab
+  label: Tabs

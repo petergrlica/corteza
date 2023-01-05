@@ -145,6 +145,7 @@ export default {
 
     onInfoSubmit (application) {
       this.info.processing = true
+      console.log(application)
 
       if (this.applicationID) {
         this.$SystemAPI.applicationUpdate(application)
