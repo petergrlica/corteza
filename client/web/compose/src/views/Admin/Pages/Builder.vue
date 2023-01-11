@@ -647,28 +647,6 @@ export default {
         }
       }
     },
-
-    appendBlock (block, msg) {
-      if (this.blocks.length) {
-        // ensuring we append the block to the end of the page
-        const maxY = this.blocks.map((block) => block.xywh[1]).reduce((acc, val) => {
-          return acc > val ? acc : val
-        }, 0)
-
-        block.xywh = [0, maxY + 2, 3, 3]
-      }
-
-      // Doing this to avoid blockID duplicates when saved
-      block.blockID = NoID
-      this.editor = { index: undefined, block: compose.PageBlockMaker(block) }
-      this.updateBlocks()
-
-      if (!this.editor) {
-        this.toastSuccess(msg)
-      } else {
-        this.toastErrorHandler(this.$t('notification:page.duplicateFailed'))
-      }
-    },
   },
 }
 </script>
