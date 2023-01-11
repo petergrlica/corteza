@@ -156,6 +156,7 @@
       :ok-title="$t('label.saveAndClose')"
       ok-variant="primary"
       :cancel-title="$t('label.cancel')"
+      :ok-disabled="anyInvalidState"
       cancel-variant="link"
       size="xl"
       :visible="showEditor"
@@ -235,6 +236,7 @@ import PageBlock from 'corteza-webapp-compose/src/components/PageBlocks'
 import EditorToolbar from 'corteza-webapp-compose/src/components/Admin/EditorToolbar'
 import { compose, NoID } from '@cortezaproject/corteza-js'
 import Configurator from 'corteza-webapp-compose/src/components/PageBlocks/Configurator'
+import { isObject } from 'lodash'
 
 export default {
   i18nOptions: {
@@ -272,6 +274,7 @@ export default {
       page: undefined,
       blocks: [],
       board: null,
+      anyInvalidState: false,
     }
   },
 
@@ -379,12 +382,17 @@ export default {
     },
   },
 
+  created () {
+    this.$root.$on('checkState', this.checkState)
+  },
+
   mounted () {
     window.addEventListener('paste', this.pasteBlock)
   },
 
   destroyed () {
     window.removeEventListener('paste', this.pasteBlock)
+    this.$root.$off('checkState', this.checkState)
   },
 
   methods: {
@@ -409,6 +417,23 @@ export default {
     deleteBlock (index) {
       this.blocks.splice(index, 1)
       this.page.blocks = this.blocks
+    },
+
+    checkState ({ items, indicator }) {
+      if (!items.length) {
+        this.anyInvalidState = false
+        return
+      }
+      let anyInvalid
+
+      // Check if the property we are checking, i.e indicator, is an object
+      if (isObject(items[0][indicator])) {
+        // If it is an object, check if the object has any values
+        anyInvalid = items.some(i => !Object.values(i[indicator]).length)
+      } else {
+        anyInvalid = items.some(i => !i[indicator])
+      }
+      anyInvalid ? this.anyInvalidState = true : this.anyInvalidState = false
     },
 
     updatePageBlockGrid (blocks) {
