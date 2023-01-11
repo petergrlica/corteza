@@ -392,9 +392,9 @@ recordList:
   selected: '{{count}} of {{total}} records selected'
   sort:
     tooltip: Sort column
-  deletedRecords:
-    listingButton: Show Deleted Records
-    existingButton: Show Existing Records
+  showRecords:
+    deleted: Show Deleted Records
+    existing: Show Existing Records
 recordOrganizer:
   descriptionField:
     footnote: Field value will be used as record description

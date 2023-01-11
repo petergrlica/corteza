@@ -189,7 +189,7 @@
           class="border-top mh-100 h-100 mb-0"
         >
           <b-thead>
-            <b-tr :variant="options.showDeletedRecordsOption && deletedRecordsDisplay ? 'warning' : ''">
+            <b-tr :variant="deletedRecordsDisplay ? 'warning' : ''">
               <b-th v-if="options.draggable && inlineEditing" />
               <b-th
                 v-if="options.selectable"
@@ -496,7 +496,8 @@
       <b-container
         ref="footer"
         fluid
-        :class="options.showDeletedRecordsOption && deletedRecordsDisplay ? 'm-0 p-2 bg-warning' : 'm-0 p-2'"
+        class="m-0 p-2"
+        :class="deletedRecordsDisplay ? 'bg-warning' : ''"
       >
         <b-row no-gutters>
           <b-col class="d-flex justify-content-between align-items-center">
@@ -588,26 +589,14 @@
 
             <div v-if="options.showDeletedRecordsOption">
               <div
-                v-if="deletedRecordsDisplay"
                 class="text-nowrap font-weight-bold"
-              >
-                <b-button
-                  variant="light"
-                  class="mx-2"
-                  @click="handleShowDeleted(false)"
-                >
-                  {{ $t('recordList.deletedRecords.existingButton') }}
-                </b-button>
-              </div>
-              <div
-                v-else
               >
                 <b-button
                   variant="light"
                   class="mx-2"
                   @click="handleShowDeleted()"
                 >
-                  {{ $t('recordList.deletedRecords.listingButton') }}
+                  {{ deletedRecordsDisplay ? $t('recordList.showRecords.existing') : $t('recordList.showRecords.deleted') }}
                 </b-button>
               </div>
             </div>
@@ -972,13 +961,8 @@ export default {
       return isSorted ? { color: 'black' } : {}
     },
 
-    handleShowDeleted (showDeleted = true) {
-      if (showDeleted) {
-        this.deletedRecordsDisplay = true
-      } else {
-        this.deletedRecordsDisplay = false
-      }
-
+    handleShowDeleted () {
+      this.deletedRecordsDisplay = !this.deletedRecordsDisplay
       this.refresh(true)
     },
 
@@ -1374,13 +1358,7 @@ export default {
         }
       }
 
-      if (this.options.showDeletedRecordsOption) {
-        if (this.deletedRecordsDisplay) {
-          this.filter.deleted = 2
-        } else {
-          this.filter.deleted = 0
-        }
-      }
+      this.deletedRecordsDisplay ? this.filter.deleted = 2 : this.filter.deleted = 0
 
       await this.$ComposeAPI.recordList({ ...this.filter, moduleID, namespaceID, query, ...paginationOptions })
         .then(({ set, filter }) => {
