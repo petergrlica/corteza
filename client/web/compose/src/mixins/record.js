@@ -255,7 +255,7 @@ export default {
         .then(() => this.$ComposeAPI.recordUndelete(this.record))
         .then(() => this.dispatchUiEvent('afterUndelete'))
         .then(() => this.updatePrompts())
-        .catch(this.toastErrorHandler(this.$t('notification:record.deleteFailed')))
+        .catch(this.toastErrorHandler(this.$t('notification:record.undeleteFailed')))
         .finally(() => {
           this.processingUndelete = false
           this.processing = false

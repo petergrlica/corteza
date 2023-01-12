@@ -1267,7 +1267,12 @@ func (svc record) delete(ctx context.Context, namespaceID, moduleID, recordID ui
 }
 
 func (svc record) undelete(ctx context.Context, namespaceID, moduleID, recordID uint64) (undel *types.Record, err error) {
-	_, _, undel, err = loadRecordCombo(ctx, svc.store, svc.dal, namespaceID, moduleID, recordID)
+	var (
+		ns *types.Namespace
+		m  *types.Module
+	)
+
+	ns, m, undel, err = loadRecordCombo(ctx, svc.store, svc.dal, namespaceID, moduleID, recordID)
 	if err != nil {
 		return nil, err
 	}
@@ -1278,6 +1283,38 @@ func (svc record) undelete(ctx context.Context, namespaceID, moduleID, recordID 
 
 	undel.DeletedAt = nil
 	undel.DeletedBy = 0
+
+	// ensure module ref is set before running through records workflows and scripts
+	undel.SetModule(m)
+
+	undel.DeletedAt = nil
+	undel.DeletedBy = 0
+	undel.Revision = undel.Revision + 1
+
+	{
+		// Calling before-record-undelete scripts
+		if err = svc.eventbus.WaitFor(ctx, event.RecordBeforeUndelete(nil, undel, m, ns, nil, nil)); err != nil {
+			return nil, err
+		}
+	}
+
+	if m.Config.RecordRevisions.Enabled {
+		// Prepare record revision for update
+		if err = svc.revisions.undeleted(ctx, undel); err != nil {
+			return
+		}
+	}
+
+	if err = dalutils.ComposeRecordUndelete(ctx, svc.dal, m, undel); err != nil {
+		return nil, err
+	}
+
+	// ensure module ref is set before running through records workflows and scripts
+	undel.SetModule(m)
+
+	{
+		_ = svc.eventbus.WaitFor(ctx, event.RecordAfterUndeleteImmutable(nil, undel, m, ns, nil, nil))
+	}
 
 	return undel, nil
 }
@@ -1680,6 +1717,10 @@ func (svc record) Iterator(ctx context.Context, f types.RecordFilter, fn eventbu
 				if !svc.ac.CanDeleteRecord(ctx, rec) {
 					return RecordErrNotAllowedToDelete()
 				}
+			case "undelete":
+				if !svc.ac.CanUndeleteRecord(ctx, rec) {
+					return RecordErrNotAllowedToUndelete()
+				}
 			}
 			recordableAction := RecordActionIteratorIteration
 
@@ -1730,6 +1771,14 @@ func (svc record) Iterator(ctx context.Context, f types.RecordFilter, fn eventbu
 						rec.DeletedAt = nowUTC()
 						rec.DeletedBy = invokerID
 						return dalutils.ComposeRecordSoftDelete(ctx, svc.dal, m, rec)
+					})
+				case "undelete":
+					recordableAction = RecordActionIteratorUndelete
+
+					return store.Tx(ctx, svc.store, func(ctx context.Context, s store.Storer) error {
+						rec.DeletedAt = nil
+						rec.DeletedBy = 0
+						return dalutils.ComposeRecordUndelete(ctx, svc.dal, m, rec)
 					})
 				}
 

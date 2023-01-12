@@ -125,7 +125,7 @@
               v-bind="$props"
               @refresh="refresh()"
             />
-            <span v-if="canDeleteSelectedRecords && !areAllRowsDeleted">
+            <template v-if="canDeleteSelectedRecords && !areAllRowsDeleted">
               <c-input-confirm
                 v-if="!inlineEditing"
                 :tooltip="$t('recordList.tooltip.deleteSelected')"
@@ -145,9 +145,9 @@
                   :icon="['far', 'trash-alt']"
                 />
               </b-button>
-            </span>
+            </template>
 
-            <span v-if="canUndeleteSelectedRecords && areAllRowsDeleted">
+            <template v-if="canUndeleteSelectedRecords && areAllRowsDeleted">
               <c-input-confirm
                 v-if="!inlineEditing"
                 :tooltip="$t('recordList.tooltip.undeleteSelected')"
@@ -170,7 +170,7 @@
                   :icon="['fa', 'trash-restore']"
                 />
               </b-button>
-            </span>
+            </template>
           </b-col>
         </b-row>
       </b-container>
@@ -189,7 +189,7 @@
           class="border-top mh-100 h-100 mb-0"
         >
           <b-thead>
-            <b-tr :variant="deletedRecordsDisplay ? 'warning' : ''">
+            <b-tr :variant="showingDeletedRecords ? 'warning' : ''">
               <b-th v-if="options.draggable && inlineEditing" />
               <b-th
                 v-if="options.selectable"
@@ -497,7 +497,7 @@
         ref="footer"
         fluid
         class="m-0 p-2"
-        :class="deletedRecordsDisplay ? 'bg-warning' : ''"
+        :class="showingDeletedRecords ? 'bg-warning' : ''"
       >
         <b-row no-gutters>
           <b-col class="d-flex justify-content-between align-items-center">
@@ -588,17 +588,13 @@
             </div>
 
             <div v-if="options.showDeletedRecordsOption">
-              <div
-                class="text-nowrap font-weight-bold"
+              <b-button
+                variant="light"
+                class="mx-2 text-nowrap"
+                @click="handleShowDeleted()"
               >
-                <b-button
-                  variant="light"
-                  class="mx-2"
-                  @click="handleShowDeleted()"
-                >
-                  {{ deletedRecordsDisplay ? $t('recordList.showRecords.existing') : $t('recordList.showRecords.deleted') }}
-                </b-button>
-              </div>
+                {{ showingDeletedRecords ? $t('recordList.showRecords.existing') : $t('recordList.showRecords.deleted') }}
+              </b-button>
             </div>
           </b-col>
         </b-row>
@@ -696,7 +692,7 @@ export default {
       items: [],
       idPrefix: `rl:${this.blockIndex}`,
       recordListFilter: [],
-      deletedRecordsDisplay: false,
+      showingDeletedRecords: false,
     }
   },
 
@@ -962,7 +958,7 @@ export default {
     },
 
     handleShowDeleted () {
-      this.deletedRecordsDisplay = !this.deletedRecordsDisplay
+      this.showingDeletedRecords = !this.showingDeletedRecords
       this.refresh(true)
     },
 
@@ -1251,11 +1247,11 @@ export default {
     handleRestoreSelectedRecords () {
       if (this.inlineEditing) {
         const sel = new Set(this.selected)
-        for (let i = 0; i < this.items.length; i++) {
-          if (sel.has(this.items[i].id)) {
-            this.handleRestoreInline(this.items[i], i)
+        this.items.forEach((item, index) => {
+          if (sel.has(item.id)) {
+            this.handleRestoreInline(item, index)
           }
-        }
+        })
       } else {
         const { moduleID, namespaceID } = this.items[0].r
 
@@ -1358,7 +1354,8 @@ export default {
         }
       }
 
-      this.deletedRecordsDisplay ? this.filter.deleted = 2 : this.filter.deleted = 0
+      // Filter's out deleted records when filter.deleted is 2, and undeleted records when filter.deleted is 0
+      this.showingDeletedRecords ? this.filter.deleted = 2 : this.filter.deleted = 0
 
       await this.$ComposeAPI.recordList({ ...this.filter, moduleID, namespaceID, query, ...paginationOptions })
         .then(({ set, filter }) => {

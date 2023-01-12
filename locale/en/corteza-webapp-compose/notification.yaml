@@ -87,6 +87,7 @@ page:
 record:
   createFailed: Could not create record
   deleteFailed: Could not delete record
+  undeleteFailed: Could not undelete record
   deleteBulkFailed: Could not delete selected records
   deleteBulkSuccess: Successfully deleted selected records
   undeleteBulkFailed: Could not restore selected records
