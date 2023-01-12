@@ -16,6 +16,7 @@ copyOf: "Copy of {{title}}"
 build:
   addBlock: Add block
   selectBlockTitle: Select type of the new block
+  unsavedChanges: Do you really want to leave? you have unsaved changes!
 createLabel: Create page
 edit:
   create: Create page

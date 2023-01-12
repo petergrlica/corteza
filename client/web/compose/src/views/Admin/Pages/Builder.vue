@@ -235,10 +235,15 @@ import PageBlock from 'corteza-webapp-compose/src/components/PageBlocks'
 import EditorToolbar from 'corteza-webapp-compose/src/components/Admin/EditorToolbar'
 import { compose, NoID } from '@cortezaproject/corteza-js'
 import Configurator from 'corteza-webapp-compose/src/components/PageBlocks/Configurator'
+import { isEqual } from 'lodash'
 
 export default {
   i18nOptions: {
     namespaces: 'page',
+  },
+
+  beforeRouteLeave (to, from, next) {
+    this.checkUnsavedChanges(next)
   },
 
   components: {
@@ -272,6 +277,7 @@ export default {
       page: undefined,
       blocks: [],
       board: null,
+      changesSaved: false,
     }
   },
 
@@ -383,6 +389,10 @@ export default {
     window.addEventListener('paste', this.pasteBlock)
   },
 
+  beforeRouteUpdate (to, from, next) {
+    this.checkUnsavedChanges(next)
+  },
+
   destroyed () {
     window.removeEventListener('paste', this.pasteBlock)
   },
@@ -416,6 +426,7 @@ export default {
     },
 
     updateBlocks () {
+      const oldBlock = this.page.blocks.find(block => block.blockID === this.editor.block.blockID)
       const block = compose.PageBlockMaker(this.editor.block)
       this.page.blocks = this.blocks
 
@@ -424,6 +435,8 @@ export default {
       } else {
         this.page.blocks.push(block)
       }
+
+      this.compareBlocksForUnsavedChanges(block, oldBlock)
 
       this.editor = undefined
     },
@@ -571,6 +584,31 @@ export default {
         this.toastSuccess(msg)
       } else {
         this.toastErrorHandler(this.$t('notification:page.duplicateFailed'))
+      }
+    },
+
+    /**
+     * Check if there were actual changes to the block or the user just pressed save without changing anything
+     * Use lodash to deep compare the two objects and detect any block changes
+     */
+    compareBlocksForUnsavedChanges (block, oldBlock) {
+      if (!isEqual(block, oldBlock)) {
+        this.changesSaved = true
+      }
+    },
+
+    // Add prompt that detects any unsaved changes
+    checkUnsavedChanges (next) {
+      if (this.changesSaved) {
+        const answer = window.confirm(this.$t('build.unsavedChanges'))
+        if (answer) {
+          this.changesSaved = false
+          next()
+        } else {
+          next(false)
+        }
+      } else {
+        next()
       }
     },
   },
