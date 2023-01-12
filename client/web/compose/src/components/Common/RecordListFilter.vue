@@ -92,40 +92,42 @@
                   <b-td
                     v-if="getField(filter.name)"
                   >
+                    <template v-if="filter.operator === 'BETWEEN'">
+                      <div class="d-flex">
+                        <b-input-group
+                          v-if="getField(`${filter.name}-start`)"
+                          style="width: 150px"
+                        >
+                          <field-editor
+                            v-bind="mock"
+                            class="field-editor mb-0"
+                            value-only
+                            :field="getField(`${filter.name}-start`)"
+                            :record="filter.record"
+                            @change="onValueChange"
+                          />
+                          <field-editor
+                            v-bind="mock"
+                            class="field-editor mb-0"
+                            value-only
+                            :field="getField(`${filter.name}-end`)"
+                            :record="filter.record"
+                            @change="onValueChange"
+                          />
+                        </b-input-group>
+                      </div>
+                    </template>
 
-                  <template v-if="filter.operator === 'BETWEEN'">
-                    <div class="d-flex">
-                      <b-input-group style="width: 150px" v-if="getField(`${filter.name}-start`)">
-                        <field-editor
-                          v-bind="mock"
-                          class="field-editor mb-0"
-                          value-only
-                          :field="getField(`${filter.name}-start`)"
-                          :record="filter.record"
-                          @change="onValueChange"
-                        />
-                        <field-editor
-                          v-bind="mock"
-                          class="field-editor mb-0"
-                          value-only
-                          :field="getField(`${filter.name}-end`)"
-                          :record="filter.record"
-                          @change="onValueChange"
-                        />
-                      </b-input-group>
-                    </div>
-                  </template>
-
-                  <template v-else>
-                    <field-editor
-                      v-bind="mock"
-                      class="field-editor mb-0"
-                      value-only
-                      :field="getField(filter.name)"
-                      :record="filter.record"
-                      @change="onValueChange"
-                    />
-                  </template>
+                    <template v-else>
+                      <field-editor
+                        v-bind="mock"
+                        class="field-editor mb-0"
+                        value-only
+                        :field="getField(filter.name)"
+                        :record="filter.record"
+                        @change="onValueChange"
+                      />
+                    </template>
                   </b-td>
                   <b-td
                     v-if="getField(filter.name)"
@@ -234,7 +236,6 @@ import FieldEditor from '../ModuleFields/Editor'
 import { compose, validator } from '@cortezaproject/corteza-js'
 import { VueSelect } from 'vue-select'
 import calculatePosition from 'corteza-webapp-compose/src/mixins/vue-select-position'
-import _ from 'lodash'
 
 export default {
   i18nOptions: {
@@ -417,15 +418,14 @@ export default {
         },
       ]
 
-
       const betweenOperators = [
         {
           value: 'BETWEEN',
-          text: "BETWEEN",
+          text: 'BETWEEN',
         },
         {
           value: 'NOT BETWEEN',
-          text: "NOT BETWEEN",
+          text: 'NOT BETWEEN',
         },
       ]
 
@@ -542,13 +542,12 @@ export default {
                 f.record.values[`${f.name}-start`] = value.start
                 f.record.values[`${f.name}-end`] = value.end
 
-                let field = this.mock.module.fields.find(field => field.name === f.name)
+                const field = this.mock.module.fields.find(field => field.name === f.name)
 
                 this.mock.module.fields.push({ ...field, name: `${f.name}-end` })
                 this.mock.module.fields.push({ ...field, name: `${f.name}-start` })
-              }
-              // If its a system field add value to root of record
-              else if (Object.keys(f.record).includes(f.name)) {
+              } else if (Object.keys(f.record).includes(f.name)) {
+                // If its a system field add value to root of record
                 f.record[f.name] = value
               } else {
                 f.record.values[f.name] = value
@@ -582,7 +581,7 @@ export default {
           if (f.operator === 'BETWEEN') {
             f.value = {
               start: record.values[`${f.name}-start`],
-              end: record.values[`${f.name}-end`]
+              end: record.values[`${f.name}-end`],
             }
           }
 
@@ -598,12 +597,12 @@ export default {
         filter.record.values[`${filter.name}-start`] = filter.record.values[`${filter.name}-start`]
         filter.record.values[`${filter.name}-end`] = filter.record.values[`${filter.name}-end`]
 
-        let field = this.mock.module.fields.find(f => f.name === filter.name)
+        const field = this.mock.module.fields.find(f => f.name === filter.name)
 
-        this.mock.module.fields.push({...field, name: `${filter.name}-end` })
-        this.mock.module.fields.push({...field, name: `${filter.name}-start` })
+        this.mock.module.fields.push({ ...field, name: `${filter.name}-end` })
+        this.mock.module.fields.push({ ...field, name: `${filter.name}-start` })
       }
-    }
+    },
   },
 }
 </script>
