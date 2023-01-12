@@ -16,7 +16,7 @@ export function getRecordListFilterSql (filter) {
       }
 
       const fieldFilter = getFieldFilter(f.name, f.kind, f.value, f.operator)
-      console.log(fieldFilter, 'fieldFilter')
+
       if (fieldFilter) {
         query += getFieldFilter(f.name, f.kind, f.value, f.operator)
         existsPreviousElement = true
@@ -31,8 +31,6 @@ export function getRecordListFilterSql (filter) {
 export function getFieldFilter (name, kind, query = '', operator = '=') {
   const boolQuery = toBoolean(query)
   const numQuery = Number.parseFloat(query)
-
-  console.log('BUILD', name, kind, query, operator)
 
   const build = (op, left, right) => {
     switch (op.toUpperCase()) {
@@ -136,7 +134,6 @@ const toBoolean = (v) => {
 // ie: Return records that have strings in columns (fields) we're showing that start with <query> in case
 //     of text or are exactly the same in case of numbers
 export function queryToFilter (searchQuery = '', prefilter = '', fields = [], recordListFilter = []) {
-  console.log(recordListFilter, 'recordListFilter')
   searchQuery = (searchQuery || '').trim()
 
   // Create query for search string
@@ -156,8 +153,6 @@ export function queryToFilter (searchQuery = '', prefilter = '', fields = [], re
 
     return filter ? `${filter}${groupCondition}` : ''
   }).filter(filter => filter)
-
-  console.log(recordListFilterSqlArray, 'recordListFilterSqlArray')
 
   // Trim AND/OR from end of string
   let recordListFilterSql = trimChar(trimChar(recordListFilterSqlArray.join(''), ' AND '), ' OR ')

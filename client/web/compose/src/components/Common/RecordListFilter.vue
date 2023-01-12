@@ -13,7 +13,7 @@
     <b-popover
       ref="popover"
       custom-class="record-list-filter shadow-sm"
-      triggers="click blur"
+      triggers="click"
       placement="bottom"
       delay="0"
       boundary="window"
@@ -86,7 +86,7 @@
                       v-model="filter.operator"
                       :options="getOperators(filter.kind, getField(filter.name))"
                       class="d-flex field-operator w-100"
-                      @change="updateFilterTest(filter)"
+                      @change="updateFilterProperties(filter)"
                     />
                   </b-td>
                   <b-td
@@ -95,20 +95,22 @@
 
                   <template v-if="filter.operator === 'BETWEEN'">
                     <div class="d-flex">
-                      <b-input-group style="width: 150px">
-                        <b-form-input
-                        v-model="filter.record.values[filter.name].start"
-                          placeholder="Start"
-                          autocomplete="off"
-                          type="number"
-                          number
+                      <b-input-group style="width: 150px" v-if="getField(`${filter.name}-start`)">
+                        <field-editor
+                          v-bind="mock"
+                          class="field-editor mb-0"
+                          value-only
+                          :field="getField(`${filter.name}-start`)"
+                          :record="filter.record"
+                          @change="onValueChange"
                         />
-                        <b-form-input
-                        v-model="filter.record.values[filter.name].end"
-                          placeholder="End"
-                          autocomplete="off"
-                          type="number"
-                          number
+                        <field-editor
+                          v-bind="mock"
+                          class="field-editor mb-0"
+                          value-only
+                          :field="getField(`${filter.name}-end`)"
+                          :record="filter.record"
+                          @change="onValueChange"
                         />
                       </b-input-group>
                     </div>
@@ -124,8 +126,6 @@
                       @change="onValueChange"
                     />
                   </template>
-                    {{filter.operator}}
-                    {{filter.record.values[filter.name].start}}
                   </b-td>
                   <b-td
                     v-if="getField(filter.name)"
@@ -478,7 +478,6 @@ export default {
 
     addFilter (groupIndex) {
       if ((this.componentFilter[groupIndex] || {}).filter) {
-        console.log(this.selectedField, 'this.selectedField')
         this.componentFilter[groupIndex].filter.push(this.createDefaultFilter('AND', this.selectedField))
       }
     },
@@ -539,8 +538,17 @@ export default {
             filter = filter.map(({ value, ...f }) => {
               f.record = new compose.Record(this.mock.module, {})
 
+              if (f.operator === 'BETWEEN') {
+                f.record.values[`${f.name}-start`] = value.start
+                f.record.values[`${f.name}-end`] = value.end
+
+                let field = this.mock.module.fields.find(field => field.name === f.name)
+
+                this.mock.module.fields.push({ ...field, name: `${f.name}-end` })
+                this.mock.module.fields.push({ ...field, name: `${f.name}-start` })
+              }
               // If its a system field add value to root of record
-              if (Object.keys(f.record).includes(f.name)) {
+              else if (Object.keys(f.record).includes(f.name)) {
                 f.record[f.name] = value
               } else {
                 f.record.values[f.name] = value
@@ -571,6 +579,13 @@ export default {
             f.value = record[f.name] || record.values[f.name]
           }
 
+          if (f.operator === 'BETWEEN') {
+            f.value = {
+              start: record.values[`${f.name}-start`],
+              end: record.values[`${f.name}-end`]
+            }
+          }
+
           return f
         })
 
@@ -578,23 +593,16 @@ export default {
       }))
     },
 
-    updateFilterTest (filter) {
-      let field = filter.record.values[filter.name];
-
-      console.log(_.isObject(field), '_.isObject(field)', field)
-
-      if (_.isObject(field)) {
-        filter.record.values[filter.name] = undefined;
-      }
-
+    updateFilterProperties (filter) {
       if (filter.operator === 'BETWEEN') {
-        filter.record.values[filter.name] = {
-          start: 0,
-          end: 0,
-        }
-      }
+        filter.record.values[`${filter.name}-start`] = filter.record.values[`${filter.name}-start`]
+        filter.record.values[`${filter.name}-end`] = filter.record.values[`${filter.name}-end`]
 
-      console.log(filter)
+        let field = this.mock.module.fields.find(f => f.name === filter.name)
+
+        this.mock.module.fields.push({...field, name: `${filter.name}-end` })
+        this.mock.module.fields.push({...field, name: `${filter.name}-start` })
+      }
     }
   },
 }
