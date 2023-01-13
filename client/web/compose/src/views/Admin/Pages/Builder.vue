@@ -164,6 +164,7 @@
       body-class="p-0 border-top-0"
       header-class="p-3 pb-0 border-bottom-0"
       @ok="updateBlocks"
+      @cancel="$root.$emit('builder-cancel')"
       @hide="editor = undefined"
     >
       <configurator

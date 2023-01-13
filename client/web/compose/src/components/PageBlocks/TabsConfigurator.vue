@@ -330,6 +330,7 @@ export default {
         ],
       },
       tabMode: [],
+      untabbedBlock: [],
     }
   },
 
@@ -348,10 +349,12 @@ export default {
 
   created () {
     this.$root.$on('tab-newBlockMade', this.handleNewBlock)
+    this.$root.$on('builder-cancel', this.cancel)
   },
 
   destroyed () {
     this.$root.$off('tab-newBlockMade', this.handleNewBlock)
+    this.$root.$off('builder-cancel', this.cancel)
   },
 
   mounted () {
@@ -369,6 +372,10 @@ export default {
       this.editFocused = true
       // controls whether save and close button should be active
       this.$root.$emit('tab-checkState')
+    },
+
+    cancel () {
+      this.retabBlock()
     },
 
     createTab (tabIndex) {
@@ -425,7 +432,15 @@ export default {
       const tabOccurrence = this.determineTabOccurrence(tab)
       if (tabOccurrence === 1) {
         this.page.blocks[tab.indexOnMain].options.tabbed = false
+        this.untabbedBlock.push(tab.indexOnMain)
       }
+    },
+
+    retabBlock () {
+      this.untabbedBlock.forEach((index) => {
+        this.page.blocks[index].options.tabbed = true
+      })
+      this.untabbedBlock = []
     },
 
     editBlock (index = undefined) {

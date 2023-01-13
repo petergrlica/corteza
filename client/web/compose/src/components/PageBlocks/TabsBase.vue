@@ -3,8 +3,16 @@
     v-bind="$props"
     v-on="$listeners"
   >
+    <div
+      v-if="!options.tabs.length"
+      class="d-flex h-100 align-items-center justify-content-center"
+    >
+      <p class="text-secondary mb-0">
+        {{ $t('tabs.noTabsBase') }}
+      </p>
+    </div>
     <b-tabs
-      v-if="options.tabs.length"
+      v-else
       v-model="activeTab"
       v-bind="{
         align: options.style.alignment,
@@ -24,27 +32,17 @@
       >
         <page-block-tab
           v-if="index === activeTab"
-          v-bind="{ ...$attrs, ...$props, page, block: compose().PageBlockMaker(tab.block), blockIndex: index }"
+          v-bind="{ ...$attrs, ...$props, page, block: tab.block, blockIndex: index }"
           :record="record"
           :module="module"
         />
       </b-tab>
     </b-tabs>
-
-    <div
-      v-else
-      class="d-flex justify-content-center pt-5"
-    >
-      <p class="text-secondary">
-        {{ $t('tab.noTabsBase') }}
-      </p>
-    </div>
   </wrap>
 </template>
 
 <script>
 import base from './base'
-import { compose } from '@cortezaproject/corteza-js'
 
 export default {
   i18nOptions: {
@@ -60,7 +58,6 @@ export default {
 
   data () {
     return {
-      compose: () => compose,
       activeTab: 0,
     }
   },
