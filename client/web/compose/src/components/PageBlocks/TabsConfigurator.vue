@@ -35,7 +35,7 @@
         <transition-group tag="div">
           <b-row
             v-for="(tab, index) in block.options.tabs"
-            :key="index"
+            :key="index + 0"
             class=" d-flex justify-content-around mb-3 mt-3 ml-0 mr-0"
           >
             <b-col
@@ -58,19 +58,19 @@
               class=" p-0 text-center d-flex justify-content-center align-items-center"
             >
               <h4
-                v-if="tabMode[index] === 'view'"
+                v-if="tab.mode === 'view'"
               >
                 {{ tab.block.title }}
               </h4>
 
               <b-col
-                v-else
+                v-if="tab.mode === 'choose'"
                 cols="6"
                 class="p-0"
               >
                 <b-form-group>
                   <b-form-select
-                    v-model="selectedBlocks[index]"
+                    v-model="tab.indexOnMain"
                     :options="options"
                     size="sm"
                     @change="createTab(index)"
@@ -94,11 +94,11 @@
               </b-col>
 
               <b-button
-                v-if="tabMode[index] === 'view'"
+                v-if="tab.mode === 'view'"
                 :title="$t('tabs.tooltip.changeTab')"
                 variant="link"
                 class="mb-2"
-                @click="switchTabMode(index, 'choose')"
+                @click="switchTabMode(index, tab, 'choose')"
               >
                 <font-awesome-icon
                   :icon="['far', 'edit']"
@@ -106,11 +106,11 @@
               </b-button>
 
               <b-button
-                v-if="tabMode[index] === 'choose'"
+                v-if="tab.mode === 'choose'"
                 :title="$t('tabs.tooltip.cancel')"
                 variant="link"
                 class="mb-3"
-                @click="switchTabMode(index, 'view')"
+                @click="switchTabMode(index, tab, 'view')"
               >
                 <font-awesome-icon
                   :icon="['fas', 'times']"
@@ -295,7 +295,6 @@ export default {
 
   data () {
     return {
-      selectedBlocks: {},
       alert: false,
       tabWarning: false,
       msg: '',
@@ -357,16 +356,14 @@ export default {
     this.$root.$off('builder-cancel', this.cancel)
   },
 
-  mounted () {
-    this.configureModes()
-  },
-
   methods: {
 
-    Add () {
+    Add (e, blockIndex) {
+      // "e" is the event object
       this.block.options.tabs.push({
         block: {},
-        indexOnMain: null,
+        indexOnMain: blockIndex || null,
+        mode: 'choose',
       })
       // dragging while adding a new tab causes ui distortions
       this.editFocused = true
@@ -380,7 +377,7 @@ export default {
 
     createTab (tabIndex) {
       const tab = this.block.options.tabs[tabIndex]
-      const blockToTab = this.selectedBlocks[tabIndex]
+      const blockToTab = this.block.options.tabs[tabIndex].indexOnMain
 
       if (!this.page.blocks[blockToTab].title) {
         this.tabWarning = true
@@ -400,6 +397,7 @@ export default {
       const newTab = {
         block: this.page.blocks[blockToTab],
         indexOnMain: blockToTab,
+        mode: 'view',
       }
       this.updateTabs(newTab, tabIndex)
       this.$root.$emit('tab-checkState')
@@ -412,7 +410,7 @@ export default {
       }
       this.block.options.tabs[tabIndex] = tab
       this.page.blocks[tab.indexOnMain].options.tabbed = true
-      this.switchTabMode(tabIndex, 'view')
+      this.switchTabMode(tabIndex, this.block.options.tabs[tabIndex], 'view')
     },
 
     deleteTab (tabIndex) {
@@ -420,9 +418,6 @@ export default {
       if (tab.indexOnMain !== null) {
         this.untabBlock(tab)
       }
-      this.tabMode.splice(tabIndex, 1)
-      this.$delete(this.selectedBlocks, tabIndex)
-      this.configureModes()
       this.block.options.tabs.splice(tabIndex, 1)
       this.$root.$emit('tab-checkState')
       this.editFocused = false
@@ -457,25 +452,15 @@ export default {
       this.$root.$emit('tab-editRequest', index)
     },
 
-    configureModes () {
-      this.block.options.tabs.map((tab, index) => {
-        if (tab.block.title && tab.indexOnMain !== null) {
-          this.$set(this.tabMode, index, 'view')
-        }
-      })
-    },
-
     handleNewBlock (block) {
-      this.Add()
+      this.Add(null, block)
       const getLatestTab = this.block.options.tabs.length - 1
-      this.selectedBlocks[getLatestTab] = block
-      const blockIndex = this.page.blocks.indexOf(block)
-      this.page.blocks[block].title = `Block-${this.page.blocks[block].kind}${blockIndex}`
+      this.page.blocks[block].title = `Block-${this.page.blocks[block].kind}${block}`
       this.createTab(getLatestTab)
     },
 
-    switchTabMode (index, mode) {
-      this.$set(this.tabMode, index, mode)
+    switchTabMode (index, tab, mode) {
+      this.block.options.tabs.splice(index, 1, { ...tab, mode })
     },
 
     addBlock (block, index = undefined) {

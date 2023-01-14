@@ -10,9 +10,15 @@ interface Style {
   verticalHorizontal: string;
 }
 
+interface Tabs {
+  block: object;
+  indexOnMain: string | number;
+  mode: string; 
+}
+
 interface Options {
   style: Style;
-  tabs: any[];
+  tabs: Tabs[];
   blockIndex: any;
 }
 
