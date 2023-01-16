@@ -839,9 +839,9 @@ endpoints:
           required: true
           title: Record ID
   - name: bulkUndelete
-    method: POST
+    method: PATCH
     title: Undelete soft-deleted records from module section
-    path: "/"
+    path: "/undelete"
     parameters:
       post:
         - type: "[]string"

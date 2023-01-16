@@ -371,7 +371,7 @@ func (h Record) MountRoutes(r chi.Router, middlewares ...func(http.Handler) http
 		r.Delete("/namespace/{namespaceID}/module/{moduleID}/record/", h.BulkDelete)
 		r.Delete("/namespace/{namespaceID}/module/{moduleID}/record/{recordID}", h.Delete)
 		r.Post("/namespace/{namespaceID}/module/{moduleID}/record/{recordID}/undelete", h.Undelete)
-		r.Post("/namespace/{namespaceID}/module/{moduleID}/record/", h.BulkUndelete)
+		r.Patch("/namespace/{namespaceID}/module/{moduleID}/record/undelete", h.BulkUndelete)
 		r.Post("/namespace/{namespaceID}/module/{moduleID}/record/attachment", h.Upload)
 		r.Post("/namespace/{namespaceID}/module/{moduleID}/record/{recordID}/trigger", h.TriggerScript)
 		r.Post("/namespace/{namespaceID}/module/{moduleID}/record/trigger", h.TriggerScriptOnList)

@@ -1778,7 +1778,7 @@ export default class Compose {
     }
     const cfg: AxiosRequestConfig = {
       ...extra,
-      method: 'post',
+      method: 'patch',
       url: this.recordBulkUndeleteEndpoint({
         namespaceID, moduleID,
       }),
@@ -1794,7 +1794,7 @@ export default class Compose {
       namespaceID,
       moduleID,
     } = a || {}
-    return `/namespace/${namespaceID}/module/${moduleID}/record/`
+    return `/namespace/${namespaceID}/module/${moduleID}/record/undelete`
   }
 
   // Uploads attachment and validates it against record field requirements
