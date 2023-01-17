@@ -36,80 +36,63 @@
           <b-row
             v-for="(tab, index) in block.options.tabs"
             :key="index + 0"
-            class=" d-flex justify-content-around mb-3 mt-3 ml-0 mr-0"
+            class=" tab pt-1 pb-1 mb-3"
           >
             <b-col
-              cols="1"
-              class="mt-2"
+              class="d-flex align-items-center m-0"
             >
               <b-button
                 variant="link"
                 :title="$t('tabs.tooltip.move')"
+                class="p-0"
               >
                 <font-awesome-icon
                   :icon="['fas', 'bars']"
-                  class="text-secondary grab h4"
+                  class="h3 grab m-0"
                 />
               </b-button>
             </b-col>
 
             <b-col
-              cols="7"
-              class=" p-0 text-center d-flex justify-content-center align-items-center"
+              v-if="tab.mode === 'view'"
+              cols="8"
+              class="d-flex justify-content-center align-items-center"
             >
-              <h4
-                v-if="tab.mode === 'view'"
-              >
-                {{ tab.block.title }}
-              </h4>
-
-              <b-col
-                v-if="tab.mode === 'choose'"
-                cols="6"
-                class="p-0"
-              >
-                <b-form-group>
-                  <b-form-select
-                    v-model="tab.indexOnMain"
-                    :options="options"
-                    size="sm"
-                    @change="createTab(index)"
-                  >
-                    <template #first>
-                      <b-form-select-option
-                        :value="null"
-                        disabled
-                      >
-                        {{ $t('tabs.selectBlock') }}
-                      </b-form-select-option>
-                    </template>
-                  </b-form-select>
-                </b-form-group>
-                <div
-                  v-if="tabWarning"
-                  class="custom-warning "
-                >
-                  <p>{{ msg }}</p>
-                </div>
-              </b-col>
-
+              <h5 class="m-0">  {{ tab.block.title }}  </h5>
               <b-button
                 v-if="tab.mode === 'view'"
                 :title="$t('tabs.tooltip.changeTab')"
                 variant="link"
-                class="mb-2"
                 @click="switchTabMode(index, tab, 'choose')"
               >
                 <font-awesome-icon
                   :icon="['far', 'edit']"
                 />
               </b-button>
+            </b-col>
 
+            <b-col
+              v-if="tab.mode === 'choose'"
+              cols="8"
+              class="d-flex pt-1"
+            >
+              <b-form-select
+                v-model="tab.indexOnMain"
+                :options="options"
+                @change="createTab(index)"
+              >
+                <template #first>
+                  <b-form-select-option
+                    :value="null"
+                    disabled
+                  >
+                    {{ $t('tabs.selectBlock') }}
+                  </b-form-select-option>
+                </template>
+              </b-form-select>
               <b-button
-                v-if="tab.mode === 'choose'"
                 :title="$t('tabs.tooltip.cancel')"
                 variant="link"
-                class="mb-3"
                 @click="switchTabMode(index, tab, 'view')"
               >
                 <font-awesome-icon
@@ -119,31 +102,26 @@
             </b-col>
 
             <b-col
-              cols="2"
-              class="p-0"
+              class="d-flex m-0 p-0 align-items-center"
             >
-              <div
-                class=" d-flex align-items-center justify-content-center"
+              <b-button
+                v-if="(tab.indexOnMain !== null)"
+                id="popover-edit"
+                size="lg"
+                :title="$t('tabs.tooltip.edit')"
+                variant="link"
+                @click="editBlock(tab.indexOnMain)"
               >
-                <b-button
-                  v-if="(tab.indexOnMain !== null)"
-                  id="popover-edit"
-                  size="md"
-                  :title="$t('tabs.tooltip.edit')"
-                  variant="link"
-                  @click="editBlock(tab.indexOnMain)"
-                >
-                  <font-awesome-icon
-                    :icon="['far', 'edit']"
-                  />
-                </b-button>
-
-                <c-input-confirm
-                  size="xs"
-                  link
-                  @confirmed="deleteTab(index)"
+                <font-awesome-icon
+                  :icon="['far', 'edit']"
                 />
-              </div>
+              </b-button>
+
+              <c-input-confirm
+                size="lg"
+                link
+                @confirmed="deleteTab(index)"
+              />
             </b-col>
           </b-row>
         </transition-group>
@@ -228,36 +206,6 @@
         </b-form-group>
       </b-row>
     </div>
-    <div class="w-501 divider" />
-    <template>
-      <div
-        class="preview bg-white position-absolute p-3"
-      >
-        <!-- locale here -->
-        <h6 class="text-primary">
-          {{ $t('tabs.preview') }}
-        </h6>
-
-        <b-tabs
-          v-bind="{
-            align: block.options.style.alignment,
-            fill: block.options.style.fillJustify === 'fill',
-            justified: block.options.style.fillJustify === 'justified',
-            pills: block.options.style.appearance === 'pills',
-            tabs: block.options.style.appearance === 'tabs',
-            small: block.options.style.appearance === 'small',
-            vertical: block.options.style.verticalHorizontal === 'vertical',
-          }"
-        >
-          <b-tab
-            v-for="(tab, index) in block.options.tabs"
-            :key="index"
-            :title="tab.block.title"
-            active
-          />
-        </b-tabs>
-      </div>
-    </template>
 
     <b-modal
       id="createBlockSelectorTab"
@@ -494,5 +442,9 @@ export default {
 
 .divider{
   margin-bottom: 15rem;
+}
+
+.tab {
+  background-color: rgba(228, 232, 232, 0.422);
 }
 </style>
