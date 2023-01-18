@@ -7,6 +7,7 @@ package rdbms
 //
 
 import (
+	acmeType "github.com/cortezaproject/corteza/server/acme/types"
 	automationType "github.com/cortezaproject/corteza/server/automation/types"
 	composeType "github.com/cortezaproject/corteza/server/compose/types"
 	federationType "github.com/cortezaproject/corteza/server/federation/types"
@@ -28,6 +29,9 @@ type (
 	// (but can be called from the optional filter)
 	extendedFilters struct {
 		// Filter extensions for search/query functions
+
+		// optional acmeCuser filter function called after the generated function
+		AcmeCuser func(*Store, acmeType.CuserFilter) ([]goqu.Expression, acmeType.CuserFilter, error)
 
 		// optional actionlog filter function called after the generated function
 		Actionlog func(*Store, actionlogType.Filter) ([]goqu.Expression, actionlogType.Filter, error)
@@ -156,6 +160,28 @@ type (
 		User func(*Store, systemType.UserFilter) ([]goqu.Expression, systemType.UserFilter, error)
 	}
 )
+
+// AcmeCuserFilter returns logical expressions
+//
+// This function is called from Store.QueryAcmeCusers() and can be extended
+// by setting Store.Filters.AcmeCuser. Extension is called after all expressions
+// are generated and can choose to ignore or alter them.
+//
+// This function is auto-generated
+func AcmeCuserFilter(f acmeType.CuserFilter) (ee []goqu.Expression, _ acmeType.CuserFilter, err error) {
+
+	if expr := stateNilComparison("deleted_at", f.Deleted); expr != nil {
+		ee = append(ee, expr)
+	}
+
+	if f.Query != "" {
+		ee = append(ee, goqu.Or(
+			goqu.C("name").ILike("%"+f.Query+"%"),
+		))
+	}
+
+	return ee, f, err
+}
 
 // ActionlogFilter returns logical expressions
 //

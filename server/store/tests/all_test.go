@@ -14,6 +14,9 @@ import (
 
 func testAllGenerated(t *testing.T, s store.Storer) {
 
+	t.Run("acmeCuser", func(t *testing.T) {
+		testAcmeCusers(t, s)
+	})
 	t.Run("actionlog", func(t *testing.T) {
 		testActionlogs(t, s)
 	})

@@ -463,7 +463,7 @@ func rbacResourceOperations(r string) map[string]bool {
 
 // rbacNodeResourceValidator checks validity of RBAC resource and operations
 //
-// Can be called without operations to check for validity of resource string only
+// # Can be called without operations to check for validity of resource string only
 //
 // This function is auto-generated
 func rbacNodeResourceValidator(r string, oo ...string) error {
@@ -507,7 +507,7 @@ func rbacNodeResourceValidator(r string, oo ...string) error {
 
 // rbacExposedModuleResourceValidator checks validity of RBAC resource and operations
 //
-// Can be called without operations to check for validity of resource string only
+// # Can be called without operations to check for validity of resource string only
 //
 // This function is auto-generated
 func rbacExposedModuleResourceValidator(r string, oo ...string) error {
@@ -552,7 +552,7 @@ func rbacExposedModuleResourceValidator(r string, oo ...string) error {
 
 // rbacSharedModuleResourceValidator checks validity of RBAC resource and operations
 //
-// Can be called without operations to check for validity of resource string only
+// # Can be called without operations to check for validity of resource string only
 //
 // This function is auto-generated
 func rbacSharedModuleResourceValidator(r string, oo ...string) error {
@@ -597,7 +597,7 @@ func rbacSharedModuleResourceValidator(r string, oo ...string) error {
 
 // rbacComponentResourceValidator checks validity of RBAC resource and operations
 //
-// Can be called without operations to check for validity of resource string only
+// # Can be called without operations to check for validity of resource string only
 //
 // This function is auto-generated
 func rbacComponentResourceValidator(r string, oo ...string) error {

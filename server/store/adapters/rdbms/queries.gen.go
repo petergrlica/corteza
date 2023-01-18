@@ -7,6 +7,7 @@ package rdbms
 //
 
 import (
+	acmeType "github.com/cortezaproject/corteza/server/acme/types"
 	automationType "github.com/cortezaproject/corteza/server/automation/types"
 	composeType "github.com/cortezaproject/corteza/server/compose/types"
 	federationType "github.com/cortezaproject/corteza/server/federation/types"
@@ -20,6 +21,106 @@ import (
 )
 
 var (
+	// acmeCuserTable represents acmeCusers store table
+	//
+	// This value is auto-generated
+	acmeCuserTable = goqu.T("cuser")
+
+	// acmeCuserSelectQuery assembles select query for fetching acmeCusers
+	//
+	// This function is auto-generated
+	acmeCuserSelectQuery = func(d goqu.DialectWrapper) *goqu.SelectDataset {
+		return d.Select(
+			"id",
+			"name",
+			"created_at",
+			"updated_at",
+			"deleted_at",
+			"created_by",
+			"updated_by",
+			"deleted_by",
+		).From(acmeCuserTable)
+	}
+
+	// acmeCuserInsertQuery assembles query inserting acmeCusers
+	//
+	// This function is auto-generated
+	acmeCuserInsertQuery = func(d goqu.DialectWrapper, res *acmeType.Cuser) *goqu.InsertDataset {
+		return d.Insert(acmeCuserTable).
+			Rows(goqu.Record{
+				"id":         res.ID,
+				"name":       res.Name,
+				"created_at": res.CreatedAt,
+				"updated_at": res.UpdatedAt,
+				"deleted_at": res.DeletedAt,
+				"created_by": res.CreatedBy,
+				"updated_by": res.UpdatedBy,
+				"deleted_by": res.DeletedBy,
+			})
+	}
+
+	// acmeCuserUpsertQuery assembles (insert+on-conflict) query for replacing acmeCusers
+	//
+	// This function is auto-generated
+	acmeCuserUpsertQuery = func(d goqu.DialectWrapper, res *acmeType.Cuser) *goqu.InsertDataset {
+		var target = `,id`
+
+		return acmeCuserInsertQuery(d, res).
+			OnConflict(
+				goqu.DoUpdate(target[1:],
+					goqu.Record{
+						"name":       res.Name,
+						"created_at": res.CreatedAt,
+						"updated_at": res.UpdatedAt,
+						"deleted_at": res.DeletedAt,
+						"created_by": res.CreatedBy,
+						"updated_by": res.UpdatedBy,
+						"deleted_by": res.DeletedBy,
+					},
+				),
+			)
+	}
+
+	// acmeCuserUpdateQuery assembles query for updating acmeCusers
+	//
+	// This function is auto-generated
+	acmeCuserUpdateQuery = func(d goqu.DialectWrapper, res *acmeType.Cuser) *goqu.UpdateDataset {
+		return d.Update(acmeCuserTable).
+			Set(goqu.Record{
+				"name":       res.Name,
+				"created_at": res.CreatedAt,
+				"updated_at": res.UpdatedAt,
+				"deleted_at": res.DeletedAt,
+				"created_by": res.CreatedBy,
+				"updated_by": res.UpdatedBy,
+				"deleted_by": res.DeletedBy,
+			}).
+			Where(acmeCuserPrimaryKeys(res))
+	}
+
+	// acmeCuserDeleteQuery assembles delete query for removing acmeCusers
+	//
+	// This function is auto-generated
+	acmeCuserDeleteQuery = func(d goqu.DialectWrapper, ee ...goqu.Expression) *goqu.DeleteDataset {
+		return d.Delete(acmeCuserTable).Where(ee...)
+	}
+
+	// acmeCuserDeleteQuery assembles delete query for removing acmeCusers
+	//
+	// This function is auto-generated
+	acmeCuserTruncateQuery = func(d goqu.DialectWrapper) *goqu.TruncateDataset {
+		return d.Truncate(acmeCuserTable)
+	}
+
+	// acmeCuserPrimaryKeys assembles set of conditions for all primary keys
+	//
+	// This function is auto-generated
+	acmeCuserPrimaryKeys = func(res *acmeType.Cuser) goqu.Ex {
+		return goqu.Ex{
+			"id": res.ID,
+		}
+	}
+
 	// actionlogTable represents actionlogs store table
 	//
 	// This value is auto-generated

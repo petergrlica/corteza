@@ -54,10 +54,9 @@ var (
 // Props methods
 // setRoute updates apigwRouteActionProps's route
 //
-// Allows method chaining
+// # Allows method chaining
 //
 // This function is auto-generated.
-//
 func (p *apigwRouteActionProps) setRoute(route *types.ApigwRoute) *apigwRouteActionProps {
 	p.route = route
 	return p
@@ -65,10 +64,9 @@ func (p *apigwRouteActionProps) setRoute(route *types.ApigwRoute) *apigwRouteAct
 
 // setNew updates apigwRouteActionProps's new
 //
-// Allows method chaining
+// # Allows method chaining
 //
 // This function is auto-generated.
-//
 func (p *apigwRouteActionProps) setNew(new *types.ApigwRoute) *apigwRouteActionProps {
 	p.new = new
 	return p
@@ -76,10 +74,9 @@ func (p *apigwRouteActionProps) setNew(new *types.ApigwRoute) *apigwRouteActionP
 
 // setUpdate updates apigwRouteActionProps's update
 //
-// Allows method chaining
+// # Allows method chaining
 //
 // This function is auto-generated.
-//
 func (p *apigwRouteActionProps) setUpdate(update *types.ApigwRoute) *apigwRouteActionProps {
 	p.update = update
 	return p
@@ -87,10 +84,9 @@ func (p *apigwRouteActionProps) setUpdate(update *types.ApigwRoute) *apigwRouteA
 
 // setSearch updates apigwRouteActionProps's search
 //
-// Allows method chaining
+// # Allows method chaining
 //
 // This function is auto-generated.
-//
 func (p *apigwRouteActionProps) setSearch(search *types.ApigwRouteFilter) *apigwRouteActionProps {
 	p.search = search
 	return p
@@ -99,7 +95,6 @@ func (p *apigwRouteActionProps) setSearch(search *types.ApigwRouteFilter) *apigw
 // Serialize converts apigwRouteActionProps to actionlog.Meta
 //
 // This function is auto-generated.
-//
 func (p apigwRouteActionProps) Serialize() actionlog.Meta {
 	var (
 		m = make(actionlog.Meta)
@@ -126,7 +121,6 @@ func (p apigwRouteActionProps) Serialize() actionlog.Meta {
 // tr translates string and replaces meta value placeholder with values
 //
 // This function is auto-generated.
-//
 func (p apigwRouteActionProps) Format(in string, err error) string {
 	var (
 		pairs = []string{"{{err}}"}
@@ -208,7 +202,6 @@ func (p apigwRouteActionProps) Format(in string, err error) string {
 // String returns loggable description as string
 //
 // This function is auto-generated.
-//
 func (a *apigwRouteAction) String() string {
 	var props = &apigwRouteActionProps{}
 
@@ -236,7 +229,6 @@ func (e *apigwRouteAction) ToAction() *actionlog.Action {
 // ApigwRouteActionSearch returns "system:apigw-route.search" action
 //
 // This function is auto-generated.
-//
 func ApigwRouteActionSearch(props ...*apigwRouteActionProps) *apigwRouteAction {
 	a := &apigwRouteAction{
 		timestamp: time.Now(),
@@ -256,7 +248,6 @@ func ApigwRouteActionSearch(props ...*apigwRouteActionProps) *apigwRouteAction {
 // ApigwRouteActionLookup returns "system:apigw-route.lookup" action
 //
 // This function is auto-generated.
-//
 func ApigwRouteActionLookup(props ...*apigwRouteActionProps) *apigwRouteAction {
 	a := &apigwRouteAction{
 		timestamp: time.Now(),
@@ -276,7 +267,6 @@ func ApigwRouteActionLookup(props ...*apigwRouteActionProps) *apigwRouteAction {
 // ApigwRouteActionCreate returns "system:apigw-route.create" action
 //
 // This function is auto-generated.
-//
 func ApigwRouteActionCreate(props ...*apigwRouteActionProps) *apigwRouteAction {
 	a := &apigwRouteAction{
 		timestamp: time.Now(),
@@ -296,7 +286,6 @@ func ApigwRouteActionCreate(props ...*apigwRouteActionProps) *apigwRouteAction {
 // ApigwRouteActionUpdate returns "system:apigw-route.update" action
 //
 // This function is auto-generated.
-//
 func ApigwRouteActionUpdate(props ...*apigwRouteActionProps) *apigwRouteAction {
 	a := &apigwRouteAction{
 		timestamp: time.Now(),
@@ -316,7 +305,6 @@ func ApigwRouteActionUpdate(props ...*apigwRouteActionProps) *apigwRouteAction {
 // ApigwRouteActionDelete returns "system:apigw-route.delete" action
 //
 // This function is auto-generated.
-//
 func ApigwRouteActionDelete(props ...*apigwRouteActionProps) *apigwRouteAction {
 	a := &apigwRouteAction{
 		timestamp: time.Now(),
@@ -336,7 +324,6 @@ func ApigwRouteActionDelete(props ...*apigwRouteActionProps) *apigwRouteAction {
 // ApigwRouteActionUndelete returns "system:apigw-route.undelete" action
 //
 // This function is auto-generated.
-//
 func ApigwRouteActionUndelete(props ...*apigwRouteActionProps) *apigwRouteAction {
 	a := &apigwRouteAction{
 		timestamp: time.Now(),
@@ -359,9 +346,7 @@ func ApigwRouteActionUndelete(props ...*apigwRouteActionProps) *apigwRouteAction
 
 // ApigwRouteErrGeneric returns "system:apigw-route.generic" as *errors.Error
 //
-//
 // This function is auto-generated.
-//
 func ApigwRouteErrGeneric(mm ...*apigwRouteActionProps) *errors.Error {
 	var p = &apigwRouteActionProps{}
 	if len(mm) > 0 {
@@ -395,9 +380,7 @@ func ApigwRouteErrGeneric(mm ...*apigwRouteActionProps) *errors.Error {
 
 // ApigwRouteErrNotFound returns "system:apigw-route.notFound" as *errors.Error
 //
-//
 // This function is auto-generated.
-//
 func ApigwRouteErrNotFound(mm ...*apigwRouteActionProps) *errors.Error {
 	var p = &apigwRouteActionProps{}
 	if len(mm) > 0 {
@@ -429,9 +412,7 @@ func ApigwRouteErrNotFound(mm ...*apigwRouteActionProps) *errors.Error {
 
 // ApigwRouteErrInvalidID returns "system:apigw-route.invalidID" as *errors.Error
 //
-//
 // This function is auto-generated.
-//
 func ApigwRouteErrInvalidID(mm ...*apigwRouteActionProps) *errors.Error {
 	var p = &apigwRouteActionProps{}
 	if len(mm) > 0 {
@@ -463,9 +444,7 @@ func ApigwRouteErrInvalidID(mm ...*apigwRouteActionProps) *errors.Error {
 
 // ApigwRouteErrInvalidEndpoint returns "system:apigw-route.invalidEndpoint" as *errors.Error
 //
-//
 // This function is auto-generated.
-//
 func ApigwRouteErrInvalidEndpoint(mm ...*apigwRouteActionProps) *errors.Error {
 	var p = &apigwRouteActionProps{}
 	if len(mm) > 0 {
@@ -497,9 +476,7 @@ func ApigwRouteErrInvalidEndpoint(mm ...*apigwRouteActionProps) *errors.Error {
 
 // ApigwRouteErrExistsEndpoint returns "system:apigw-route.existsEndpoint" as *errors.Error
 //
-//
 // This function is auto-generated.
-//
 func ApigwRouteErrExistsEndpoint(mm ...*apigwRouteActionProps) *errors.Error {
 	var p = &apigwRouteActionProps{}
 	if len(mm) > 0 {
@@ -531,9 +508,7 @@ func ApigwRouteErrExistsEndpoint(mm ...*apigwRouteActionProps) *errors.Error {
 
 // ApigwRouteErrAlreadyExists returns "system:apigw-route.alreadyExists" as *errors.Error
 //
-//
 // This function is auto-generated.
-//
 func ApigwRouteErrAlreadyExists(mm ...*apigwRouteActionProps) *errors.Error {
 	var p = &apigwRouteActionProps{}
 	if len(mm) > 0 {
@@ -565,9 +540,7 @@ func ApigwRouteErrAlreadyExists(mm ...*apigwRouteActionProps) *errors.Error {
 
 // ApigwRouteErrNotAllowedToCreate returns "system:apigw-route.notAllowedToCreate" as *errors.Error
 //
-//
 // This function is auto-generated.
-//
 func ApigwRouteErrNotAllowedToCreate(mm ...*apigwRouteActionProps) *errors.Error {
 	var p = &apigwRouteActionProps{}
 	if len(mm) > 0 {
@@ -601,9 +574,7 @@ func ApigwRouteErrNotAllowedToCreate(mm ...*apigwRouteActionProps) *errors.Error
 
 // ApigwRouteErrNotAllowedToRead returns "system:apigw-route.notAllowedToRead" as *errors.Error
 //
-//
 // This function is auto-generated.
-//
 func ApigwRouteErrNotAllowedToRead(mm ...*apigwRouteActionProps) *errors.Error {
 	var p = &apigwRouteActionProps{}
 	if len(mm) > 0 {
@@ -637,9 +608,7 @@ func ApigwRouteErrNotAllowedToRead(mm ...*apigwRouteActionProps) *errors.Error {
 
 // ApigwRouteErrNotAllowedToSearch returns "system:apigw-route.notAllowedToSearch" as *errors.Error
 //
-//
 // This function is auto-generated.
-//
 func ApigwRouteErrNotAllowedToSearch(mm ...*apigwRouteActionProps) *errors.Error {
 	var p = &apigwRouteActionProps{}
 	if len(mm) > 0 {
@@ -673,9 +642,7 @@ func ApigwRouteErrNotAllowedToSearch(mm ...*apigwRouteActionProps) *errors.Error
 
 // ApigwRouteErrNotAllowedToUpdate returns "system:apigw-route.notAllowedToUpdate" as *errors.Error
 //
-//
 // This function is auto-generated.
-//
 func ApigwRouteErrNotAllowedToUpdate(mm ...*apigwRouteActionProps) *errors.Error {
 	var p = &apigwRouteActionProps{}
 	if len(mm) > 0 {
@@ -709,9 +676,7 @@ func ApigwRouteErrNotAllowedToUpdate(mm ...*apigwRouteActionProps) *errors.Error
 
 // ApigwRouteErrNotAllowedToDelete returns "system:apigw-route.notAllowedToDelete" as *errors.Error
 //
-//
 // This function is auto-generated.
-//
 func ApigwRouteErrNotAllowedToDelete(mm ...*apigwRouteActionProps) *errors.Error {
 	var p = &apigwRouteActionProps{}
 	if len(mm) > 0 {
@@ -745,9 +710,7 @@ func ApigwRouteErrNotAllowedToDelete(mm ...*apigwRouteActionProps) *errors.Error
 
 // ApigwRouteErrNotAllowedToUndelete returns "system:apigw-route.notAllowedToUndelete" as *errors.Error
 //
-//
 // This function is auto-generated.
-//
 func ApigwRouteErrNotAllowedToUndelete(mm ...*apigwRouteActionProps) *errors.Error {
 	var p = &apigwRouteActionProps{}
 	if len(mm) > 0 {
@@ -781,9 +744,7 @@ func ApigwRouteErrNotAllowedToUndelete(mm ...*apigwRouteActionProps) *errors.Err
 
 // ApigwRouteErrNotAllowedToExec returns "system:apigw-route.notAllowedToExec" as *errors.Error
 //
-//
 // This function is auto-generated.
-//
 func ApigwRouteErrNotAllowedToExec(mm ...*apigwRouteActionProps) *errors.Error {
 	var p = &apigwRouteActionProps{}
 	if len(mm) > 0 {
@@ -823,7 +784,6 @@ func ApigwRouteErrNotAllowedToExec(mm ...*apigwRouteActionProps) *errors.Error {
 // It will wrap unrecognized/internal errors with generic errors.
 //
 // This function is auto-generated.
-//
 func (svc apigwRoute) recordAction(ctx context.Context, props *apigwRouteActionProps, actionFn func(...*apigwRouteActionProps) *apigwRouteAction, err error) error {
 	if svc.actionlog == nil || actionFn == nil {
 		// action log disabled or no action fn passed, return error as-is

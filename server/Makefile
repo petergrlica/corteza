@@ -147,6 +147,7 @@ cue.fmt: $(CUE)
 	$(CUE) fmt compose/*.cue
 	$(CUE) fmt automation/*.cue
 	$(CUE) fmt federation/*.cue
+	$(CUE) fmt acme/*.cue
 
 codegen-legacy: $(CODEGEN)
 	@ $(CODEGEN) -v

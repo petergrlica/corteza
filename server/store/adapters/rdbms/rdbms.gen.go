@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"strings"
 
+	acmeType "github.com/cortezaproject/corteza/server/acme/types"
 	automationType "github.com/cortezaproject/corteza/server/automation/types"
 	composeType "github.com/cortezaproject/corteza/server/compose/types"
 	federationType "github.com/cortezaproject/corteza/server/federation/types"
@@ -30,6 +31,7 @@ import (
 )
 
 var (
+	_ store.AcmeCusers                 = &Store{}
 	_ store.Actionlogs                 = &Store{}
 	_ store.ApigwFilters               = &Store{}
 	_ store.ApigwRoutes                = &Store{}
@@ -73,6 +75,575 @@ var (
 	_ store.Templates                  = &Store{}
 	_ store.Users                      = &Store{}
 )
+
+// CreateAcmeCuser creates one or more rows in acmeCuser collection
+//
+// This function is auto-generated
+func (s *Store) CreateAcmeCuser(ctx context.Context, rr ...*acmeType.Cuser) (err error) {
+	for i := range rr {
+		if err = s.checkAcmeCuserConstraints(ctx, rr[i]); err != nil {
+			return
+		}
+
+		if err = s.Exec(ctx, acmeCuserInsertQuery(s.Dialect.GOQU(), rr[i])); err != nil {
+			return
+		}
+	}
+
+	return
+}
+
+// UpdateAcmeCuser updates one or more existing entries in acmeCuser collection
+//
+// This function is auto-generated
+func (s *Store) UpdateAcmeCuser(ctx context.Context, rr ...*acmeType.Cuser) (err error) {
+	for i := range rr {
+		if err = s.checkAcmeCuserConstraints(ctx, rr[i]); err != nil {
+			return
+		}
+
+		if err = s.Exec(ctx, acmeCuserUpdateQuery(s.Dialect.GOQU(), rr[i])); err != nil {
+			return
+		}
+	}
+
+	return
+}
+
+// UpsertAcmeCuser updates one or more existing entries in acmeCuser collection
+//
+// This function is auto-generated
+func (s *Store) UpsertAcmeCuser(ctx context.Context, rr ...*acmeType.Cuser) (err error) {
+	for i := range rr {
+		if err = s.checkAcmeCuserConstraints(ctx, rr[i]); err != nil {
+			return
+		}
+
+		if err = s.Exec(ctx, acmeCuserUpsertQuery(s.Dialect.GOQU(), rr[i])); err != nil {
+			return
+		}
+	}
+
+	return
+}
+
+// DeleteAcmeCuser Deletes one or more entries from acmeCuser collection
+//
+// This function is auto-generated
+func (s *Store) DeleteAcmeCuser(ctx context.Context, rr ...*acmeType.Cuser) (err error) {
+	for i := range rr {
+		if err = s.Exec(ctx, acmeCuserDeleteQuery(s.Dialect.GOQU(), acmeCuserPrimaryKeys(rr[i]))); err != nil {
+			return
+		}
+	}
+
+	return nil
+}
+
+// DeleteAcmeCuserByID deletes single entry from acmeCuser collection
+//
+// This function is auto-generated
+func (s *Store) DeleteAcmeCuserByID(ctx context.Context, id uint64) error {
+	return s.Exec(ctx, acmeCuserDeleteQuery(s.Dialect.GOQU(), goqu.Ex{
+		"id": id,
+	}))
+}
+
+// TruncateAcmeCusers Deletes all rows from the acmeCuser collection
+func (s *Store) TruncateAcmeCusers(ctx context.Context) error {
+	return s.Exec(ctx, acmeCuserTruncateQuery(s.Dialect.GOQU()))
+}
+
+// SearchAcmeCusers returns (filtered) set of AcmeCusers
+//
+// This function is auto-generated
+func (s *Store) SearchAcmeCusers(ctx context.Context, f acmeType.CuserFilter) (set acmeType.CuserSet, _ acmeType.CuserFilter, err error) {
+
+	// Cleanup unwanted cursor values (only relevant is f.PageCursor, next&prev are reset and returned)
+	f.PrevPage, f.NextPage = nil, nil
+
+	if f.PageCursor != nil {
+		if f.IncPageNavigation || f.IncTotal {
+			return nil, f, fmt.Errorf("not allowed to fetch page navigation or total item count with page cursor")
+		}
+
+		// Page cursor exists; we need to validate it against used sort
+		// To cover the case when paging cursor is set but sorting is empty, we collect the sorting instructions
+		// from the cursor.
+		// This (extracted sorting info) is then returned as part of response
+		if f.Sort, err = f.PageCursor.Sort(f.Sort); err != nil {
+			return
+		}
+	}
+
+	// Make sure results are always sorted at least by primary keys
+	if f.Sort.Get("id") == nil {
+		f.Sort = append(f.Sort, &filter.SortExpr{
+			Column:     "id",
+			Descending: f.Sort.LastDescending(),
+		})
+	}
+
+	// Cloned sorting instructions for the actual sorting
+	// Original are passed to the etchFullPageOfAcmeCusers fn used for cursor creation;
+	// direction information it MUST keep the initial
+	sort := f.Sort.Clone()
+
+	// When cursor for a previous page is used it's marked as reversed
+	// This tells us to flip the descending flag on all used sort keys
+	if f.PageCursor != nil && f.PageCursor.ROrder {
+		sort.Reverse()
+	}
+
+	set, f.PrevPage, f.NextPage, err = s.fetchFullPageOfAcmeCusers(ctx, f, sort)
+
+	f.PageCursor = nil
+	if err != nil {
+		return nil, f, err
+	}
+
+	if f.IncTotal {
+		// Calc total from the number of items fetched
+		// even if we do build the page navigation
+		f.Total = uint(len(set))
+
+		if f.Limit > 0 && uint(len(set)) == f.Limit {
+			// there are fewer items fetched then requested limit
+			limit := f.Limit
+			f.Limit = 0
+			var navSet acmeType.CuserSet
+			if navSet, _, _, err = s.fetchFullPageOfAcmeCusers(ctx, f, sort); err != nil {
+				return
+			} else {
+				f.Total = uint(len(navSet))
+				f.Limit = limit
+			}
+		}
+	}
+
+	return set, f, nil
+}
+
+// fetchFullPageOfAcmeCusers collects all requested results.
+//
+// Function applies:
+//   - cursor conditions (where ...)
+//   - limit
+//
+// Main responsibility of this function is to perform additional sequential queries in case when not enough results
+// are collected due to failed check on a specific row (by check fn).
+//
+// # Function then moves cursor to the last item fetched
+//
+// This function is auto-generated
+func (s *Store) fetchFullPageOfAcmeCusers(
+	ctx context.Context,
+	filter acmeType.CuserFilter,
+	sort filter.SortExprSet,
+) (set []*acmeType.Cuser, prev, next *filter.PagingCursor, err error) {
+	var (
+		aux []*acmeType.Cuser
+
+		// When cursor for a previous page is used it's marked as reversed
+		// This tells us to flip the descending flag on all used sort keys
+		reversedOrder = filter.PageCursor != nil && filter.PageCursor.ROrder
+
+		// Copy no. of required items to limit
+		// Limit will change when doing subsequent queries to fill
+		// the set with all required items
+		limit = filter.Limit
+
+		reqItems = filter.Limit
+
+		// cursor to prev. page is only calculated when cursor is used
+		hasPrev = filter.PageCursor != nil
+
+		// next cursor is calculated when there are more pages to come
+		hasNext bool
+
+		tryFilter acmeType.CuserFilter
+	)
+
+	set = make([]*acmeType.Cuser, 0, DefaultSliceCapacity)
+
+	for try := 0; try < MaxRefetches; try++ {
+		// Copy filter & apply custom sorting that might be affected by cursor
+		tryFilter = filter
+		tryFilter.Sort = sort
+
+		if limit > 0 {
+			// fetching + 1 to peak ahead if there are more items
+			// we can fetch (next-page cursor)
+			tryFilter.Limit = limit + 1
+		}
+
+		if aux, hasNext, err = s.QueryAcmeCusers(ctx, tryFilter); err != nil {
+			return nil, nil, nil, err
+		}
+
+		if len(aux) == 0 {
+			// nothing fetched
+			break
+		}
+
+		// append fetched items
+		set = append(set, aux...)
+
+		if reqItems == 0 || !hasNext {
+			// no max requested items specified, break out
+			break
+		}
+
+		collected := uint(len(set))
+
+		if reqItems > collected {
+			// not enough items fetched, try again with adjusted limit
+			limit = reqItems - collected
+
+			if limit < MinEnsureFetchLimit {
+				// In case limit is set very low and we've missed records in the first fetch,
+				// make sure next fetch limit is a bit higher
+				limit = MinEnsureFetchLimit
+			}
+
+			// Update cursor so that it points to the last item fetched
+			tryFilter.PageCursor = s.collectAcmeCuserCursorValues(set[collected-1], filter.Sort...)
+
+			// Copy reverse flag from sorting
+			tryFilter.PageCursor.LThen = filter.Sort.Reversed()
+			continue
+		}
+
+		if reqItems < collected {
+			set = set[:reqItems]
+		}
+
+		break
+	}
+
+	collected := len(set)
+
+	if collected == 0 {
+		return nil, nil, nil, nil
+	}
+
+	if reversedOrder {
+		// Fetched set needs to be reversed because we've forced a descending order to get the previous page
+		for i, j := 0, collected-1; i < j; i, j = i+1, j-1 {
+			set[i], set[j] = set[j], set[i]
+		}
+
+		// when in reverse-order rules on what cursor to return change
+		hasPrev, hasNext = hasNext, hasPrev
+	}
+
+	if hasPrev {
+		prev = s.collectAcmeCuserCursorValues(set[0], filter.Sort...)
+		prev.ROrder = true
+		prev.LThen = !filter.Sort.Reversed()
+	}
+
+	if hasNext {
+		next = s.collectAcmeCuserCursorValues(set[collected-1], filter.Sort...)
+		next.LThen = filter.Sort.Reversed()
+	}
+
+	return set, prev, next, nil
+}
+
+// QueryAcmeCusers queries the database, converts and checks each row and returns collected set
+//
+// With generics, we can remove this per-resource-generated function
+// and replace it with a single utility fetcher
+//
+// This function is auto-generated
+func (s *Store) QueryAcmeCusers(
+	ctx context.Context,
+	f acmeType.CuserFilter,
+) (_ []*acmeType.Cuser, more bool, err error) {
+	var (
+		ok bool
+
+		set         = make([]*acmeType.Cuser, 0, DefaultSliceCapacity)
+		res         *acmeType.Cuser
+		aux         *auxAcmeCuser
+		rows        *sql.Rows
+		count       uint
+		expr, tExpr []goqu.Expression
+
+		sortExpr []exp.OrderedExpression
+	)
+
+	if s.Filters.AcmeCuser != nil {
+		// extended filter set
+		tExpr, f, err = s.Filters.AcmeCuser(s, f)
+	} else {
+		// using generated filter
+		tExpr, f, err = AcmeCuserFilter(f)
+	}
+
+	if err != nil {
+		err = fmt.Errorf("could generate filter expression for AcmeCuser: %w", err)
+		return
+	}
+
+	expr = append(expr, tExpr...)
+
+	// paging feature is enabled
+	if f.PageCursor != nil {
+		if tExpr, err = cursorWithSorting(f.PageCursor, s.sortableAcmeCuserFields()); err != nil {
+			return
+		} else {
+			expr = append(expr, tExpr...)
+		}
+	}
+
+	query := acmeCuserSelectQuery(s.Dialect.GOQU()).Where(expr...)
+
+	// sorting feature is enabled
+	if sortExpr, err = order(f.Sort, s.sortableAcmeCuserFields()); err != nil {
+		err = fmt.Errorf("could generate order expression for AcmeCuser: %w", err)
+		return
+	}
+
+	if len(sortExpr) > 0 {
+		query = query.Order(sortExpr...)
+	}
+
+	if f.Limit > 0 {
+		query = query.Limit(f.Limit)
+	}
+
+	rows, err = s.Query(ctx, query)
+	if err != nil {
+		err = fmt.Errorf("could not query AcmeCuser: %w", err)
+		return
+	}
+
+	if err = rows.Err(); err != nil {
+		err = fmt.Errorf("could not query AcmeCuser: %w", err)
+		return
+	}
+
+	defer func() {
+		closeError := rows.Close()
+		if err == nil {
+			// return error from close
+			err = closeError
+		}
+	}()
+
+	for rows.Next() {
+		if err = rows.Err(); err != nil {
+			err = fmt.Errorf("could not query AcmeCuser: %w", err)
+			return
+		}
+
+		aux = new(auxAcmeCuser)
+		if err = aux.scan(rows); err != nil {
+			err = fmt.Errorf("could not scan rows for AcmeCuser: %w", err)
+			return
+		}
+
+		count++
+		if res, err = aux.decode(); err != nil {
+			err = fmt.Errorf("could not decode AcmeCuser: %w", err)
+			return
+		}
+
+		// check fn set, call it and see if it passed the test
+		// if not, skip the item
+		if f.Check != nil {
+			if ok, err = f.Check(res); err != nil {
+				return
+			} else if !ok {
+				continue
+			}
+		}
+
+		set = append(set, res)
+	}
+
+	return set, f.Limit > 0 && count >= f.Limit, err
+
+}
+
+// LookupAcmeCuserByID searches for custom user by ID
+//
+// Returns custom user
+//
+// This function is auto-generated
+func (s *Store) LookupAcmeCuserByID(ctx context.Context, id uint64) (_ *acmeType.Cuser, err error) {
+	var (
+		rows   *sql.Rows
+		aux    = new(auxAcmeCuser)
+		lookup = acmeCuserSelectQuery(s.Dialect.GOQU()).Where(
+			goqu.I("id").Eq(id),
+		).Limit(1)
+	)
+
+	rows, err = s.Query(ctx, lookup)
+	if err != nil {
+		return
+	}
+
+	defer func() {
+		closeError := rows.Close()
+		if err == nil {
+			// return error from close
+			err = closeError
+		}
+	}()
+
+	if err = rows.Err(); err != nil {
+		return
+	}
+
+	if !rows.Next() {
+		return nil, store.ErrNotFound.Stack(1)
+	}
+
+	if err = aux.scan(rows); err != nil {
+		return
+	}
+
+	return aux.decode()
+}
+
+// LookupAcmeCuserByName searches for custom user by name
+//
+// This function is auto-generated
+func (s *Store) LookupAcmeCuserByName(ctx context.Context, name string) (_ *acmeType.Cuser, err error) {
+	var (
+		rows   *sql.Rows
+		aux    = new(auxAcmeCuser)
+		lookup = acmeCuserSelectQuery(s.Dialect.GOQU()).Where(
+			goqu.I("name").Eq(name),
+		).Limit(1)
+	)
+
+	rows, err = s.Query(ctx, lookup)
+	if err != nil {
+		return
+	}
+
+	defer func() {
+		closeError := rows.Close()
+		if err == nil {
+			// return error from close
+			err = closeError
+		}
+	}()
+
+	if err = rows.Err(); err != nil {
+		return
+	}
+
+	if !rows.Next() {
+		return nil, store.ErrNotFound.Stack(1)
+	}
+
+	if err = aux.scan(rows); err != nil {
+		return
+	}
+
+	return aux.decode()
+}
+
+// sortableAcmeCuserFields returns all <no value> columns flagged as sortable
+//
+// # With optional string arg, all columns are returned aliased
+//
+// This function is auto-generated
+func (Store) sortableAcmeCuserFields() map[string]string {
+	return map[string]string{
+		"created_at": "created_at",
+		"createdat":  "created_at",
+		"deleted_at": "deleted_at",
+		"deletedat":  "deleted_at",
+		"id":         "id",
+		"name":       "name",
+		"updated_at": "updated_at",
+		"updatedat":  "updated_at",
+	}
+}
+
+// collectAcmeCuserCursorValues collects values from the given resource that and sets them to the cursor
+// to be used for pagination
+//
+// Values that are collected must come from sortable, unique or primary columns/fields
+// At least one of the collected columns must be flagged as unique, otherwise fn appends primary keys at the end
+//
+// Known issue:
+//
+//	when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
+//	undeleted items)
+//
+// This function is auto-generated
+func (s *Store) collectAcmeCuserCursorValues(res *acmeType.Cuser, cc ...*filter.SortExpr) *filter.PagingCursor {
+	var (
+		cur = &filter.PagingCursor{LThen: filter.SortExprSet(cc).Reversed()}
+
+		hasUnique bool
+
+		pkID bool
+
+		collect = func(cc ...*filter.SortExpr) {
+			getVal := func(col string) interface{} {
+				switch col {
+				case "id":
+					pkID = true
+					return res.ID
+				case "name":
+					return res.Name
+				case "createdAt":
+					return res.CreatedAt
+				case "updatedAt":
+					return res.UpdatedAt
+				case "deletedAt":
+					return res.DeletedAt
+				}
+				return nil
+			}
+
+			for _, c := range cc {
+				switch c.Modifier() {
+				case filter.COALESCE:
+					var val interface{}
+					for _, col := range c.Columns() {
+						if reflect2.IsNil(val) {
+							val = getVal(col)
+						}
+					}
+					cur.SetModifier(c.Column, val, c.Descending, c.Modifier(), c.Columns()...)
+				default:
+					cur.Set(c.Column, getVal(c.Column), c.Descending)
+				}
+			}
+		}
+	)
+
+	_ = hasUnique
+
+	collect(cc...)
+	if !hasUnique || !pkID {
+		collect(&filter.SortExpr{Column: "id", Descending: false})
+	}
+
+	return cur
+
+}
+
+// checkAcmeCuserConstraints performs lookups (on valid) resource to check if any of the values on unique fields
+// already exists in the store
+//
+// Using built-in constraint checking would be more performant, but unfortunately we cannot rely
+// on the full support (MySQL does not support conditional indexes)
+//
+// This function is auto-generated
+func (s *Store) checkAcmeCuserConstraints(ctx context.Context, res *acmeType.Cuser) (err error) {
+	return nil
+}
 
 // CreateActionlog creates one or more rows in actionlog collection
 //
@@ -303,7 +874,7 @@ func (s *Store) LookupActionlogByID(ctx context.Context, id uint64) (_ *actionlo
 
 // sortableActionlogFields returns all <no value> columns flagged as sortable
 //
-// With optional string arg, all columns are returned aliased
+// # With optional string arg, all columns are returned aliased
 //
 // This function is auto-generated
 func (Store) sortableActionlogFields() map[string]string {
@@ -320,8 +891,9 @@ func (Store) sortableActionlogFields() map[string]string {
 // At least one of the collected columns must be flagged as unique, otherwise fn appends primary keys at the end
 //
 // Known issue:
-//   when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
-//   undeleted items)
+//
+//	when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
+//	undeleted items)
 //
 // This function is auto-generated
 func (s *Store) collectActionlogCursorValues(res *actionlogType.Action, cc ...*filter.SortExpr) *filter.PagingCursor {
@@ -534,13 +1106,13 @@ func (s *Store) SearchApigwFilters(ctx context.Context, f systemType.ApigwFilter
 // fetchFullPageOfApigwFilters collects all requested results.
 //
 // Function applies:
-//  - cursor conditions (where ...)
-//  - limit
+//   - cursor conditions (where ...)
+//   - limit
 //
 // Main responsibility of this function is to perform additional sequential queries in case when not enough results
 // are collected due to failed check on a specific row (by check fn).
 //
-// Function then moves cursor to the last item fetched
+// # Function then moves cursor to the last item fetched
 //
 // This function is auto-generated
 func (s *Store) fetchFullPageOfApigwFilters(
@@ -857,7 +1429,7 @@ func (s *Store) LookupApigwFilterByRoute(ctx context.Context, route uint64) (_ *
 
 // sortableApigwFilterFields returns all <no value> columns flagged as sortable
 //
-// With optional string arg, all columns are returned aliased
+// # With optional string arg, all columns are returned aliased
 //
 // This function is auto-generated
 func (Store) sortableApigwFilterFields() map[string]string {
@@ -883,8 +1455,9 @@ func (Store) sortableApigwFilterFields() map[string]string {
 // At least one of the collected columns must be flagged as unique, otherwise fn appends primary keys at the end
 //
 // Known issue:
-//   when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
-//   undeleted items)
+//
+//	when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
+//	undeleted items)
 //
 // This function is auto-generated
 func (s *Store) collectApigwFilterCursorValues(res *systemType.ApigwFilter, cc ...*filter.SortExpr) *filter.PagingCursor {
@@ -1109,13 +1682,13 @@ func (s *Store) SearchApigwRoutes(ctx context.Context, f systemType.ApigwRouteFi
 // fetchFullPageOfApigwRoutes collects all requested results.
 //
 // Function applies:
-//  - cursor conditions (where ...)
-//  - limit
+//   - cursor conditions (where ...)
+//   - limit
 //
 // Main responsibility of this function is to perform additional sequential queries in case when not enough results
 // are collected due to failed check on a specific row (by check fn).
 //
-// Function then moves cursor to the last item fetched
+// # Function then moves cursor to the last item fetched
 //
 // This function is auto-generated
 func (s *Store) fetchFullPageOfApigwRoutes(
@@ -1436,7 +2009,7 @@ func (s *Store) LookupApigwRouteByEndpoint(ctx context.Context, endpoint string)
 
 // sortableApigwRouteFields returns all <no value> columns flagged as sortable
 //
-// With optional string arg, all columns are returned aliased
+// # With optional string arg, all columns are returned aliased
 //
 // This function is auto-generated
 func (Store) sortableApigwRouteFields() map[string]string {
@@ -1462,8 +2035,9 @@ func (Store) sortableApigwRouteFields() map[string]string {
 // At least one of the collected columns must be flagged as unique, otherwise fn appends primary keys at the end
 //
 // Known issue:
-//   when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
-//   undeleted items)
+//
+//	when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
+//	undeleted items)
 //
 // This function is auto-generated
 func (s *Store) collectApigwRouteCursorValues(res *systemType.ApigwRoute, cc ...*filter.SortExpr) *filter.PagingCursor {
@@ -1688,13 +2262,13 @@ func (s *Store) SearchApplications(ctx context.Context, f systemType.Application
 // fetchFullPageOfApplications collects all requested results.
 //
 // Function applies:
-//  - cursor conditions (where ...)
-//  - limit
+//   - cursor conditions (where ...)
+//   - limit
 //
 // Main responsibility of this function is to perform additional sequential queries in case when not enough results
 // are collected due to failed check on a specific row (by check fn).
 //
-// Function then moves cursor to the last item fetched
+// # Function then moves cursor to the last item fetched
 //
 // This function is auto-generated
 func (s *Store) fetchFullPageOfApplications(
@@ -1973,7 +2547,7 @@ func (s *Store) LookupApplicationByID(ctx context.Context, id uint64) (_ *system
 
 // sortableApplicationFields returns all <no value> columns flagged as sortable
 //
-// With optional string arg, all columns are returned aliased
+// # With optional string arg, all columns are returned aliased
 //
 // This function is auto-generated
 func (Store) sortableApplicationFields() map[string]string {
@@ -1998,8 +2572,9 @@ func (Store) sortableApplicationFields() map[string]string {
 // At least one of the collected columns must be flagged as unique, otherwise fn appends primary keys at the end
 //
 // Known issue:
-//   when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
-//   undeleted items)
+//
+//	when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
+//	undeleted items)
 //
 // This function is auto-generated
 func (s *Store) collectApplicationCursorValues(res *systemType.Application, cc ...*filter.SortExpr) *filter.PagingCursor {
@@ -2222,13 +2797,13 @@ func (s *Store) SearchAttachments(ctx context.Context, f systemType.AttachmentFi
 // fetchFullPageOfAttachments collects all requested results.
 //
 // Function applies:
-//  - cursor conditions (where ...)
-//  - limit
+//   - cursor conditions (where ...)
+//   - limit
 //
 // Main responsibility of this function is to perform additional sequential queries in case when not enough results
 // are collected due to failed check on a specific row (by check fn).
 //
-// Function then moves cursor to the last item fetched
+// # Function then moves cursor to the last item fetched
 //
 // This function is auto-generated
 func (s *Store) fetchFullPageOfAttachments(
@@ -2505,7 +3080,7 @@ func (s *Store) LookupAttachmentByID(ctx context.Context, id uint64) (_ *systemT
 
 // sortableAttachmentFields returns all <no value> columns flagged as sortable
 //
-// With optional string arg, all columns are returned aliased
+// # With optional string arg, all columns are returned aliased
 //
 // This function is auto-generated
 func (Store) sortableAttachmentFields() map[string]string {
@@ -2529,8 +3104,9 @@ func (Store) sortableAttachmentFields() map[string]string {
 // At least one of the collected columns must be flagged as unique, otherwise fn appends primary keys at the end
 //
 // Known issue:
-//   when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
-//   undeleted items)
+//
+//	when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
+//	undeleted items)
 //
 // This function is auto-generated
 func (s *Store) collectAttachmentCursorValues(res *systemType.Attachment, cc ...*filter.SortExpr) *filter.PagingCursor {
@@ -2751,13 +3327,13 @@ func (s *Store) SearchAuthClients(ctx context.Context, f systemType.AuthClientFi
 // fetchFullPageOfAuthClients collects all requested results.
 //
 // Function applies:
-//  - cursor conditions (where ...)
-//  - limit
+//   - cursor conditions (where ...)
+//   - limit
 //
 // Main responsibility of this function is to perform additional sequential queries in case when not enough results
 // are collected due to failed check on a specific row (by check fn).
 //
-// Function then moves cursor to the last item fetched
+// # Function then moves cursor to the last item fetched
 //
 // This function is auto-generated
 func (s *Store) fetchFullPageOfAuthClients(
@@ -3079,7 +3655,7 @@ func (s *Store) LookupAuthClientByHandle(ctx context.Context, handle string) (_ 
 
 // sortableAuthClientFields returns all <no value> columns flagged as sortable
 //
-// With optional string arg, all columns are returned aliased
+// # With optional string arg, all columns are returned aliased
 //
 // This function is auto-generated
 func (Store) sortableAuthClientFields() map[string]string {
@@ -3108,8 +3684,9 @@ func (Store) sortableAuthClientFields() map[string]string {
 // At least one of the collected columns must be flagged as unique, otherwise fn appends primary keys at the end
 //
 // Known issue:
-//   when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
-//   undeleted items)
+//
+//	when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
+//	undeleted items)
 //
 // This function is auto-generated
 func (s *Store) collectAuthClientCursorValues(res *systemType.AuthClient, cc ...*filter.SortExpr) *filter.PagingCursor {
@@ -3432,7 +4009,7 @@ func (s *Store) LookupAuthConfirmedClientByUserIDClientID(ctx context.Context, u
 
 // sortableAuthConfirmedClientFields returns all <no value> columns flagged as sortable
 //
-// With optional string arg, all columns are returned aliased
+// # With optional string arg, all columns are returned aliased
 //
 // This function is auto-generated
 func (Store) sortableAuthConfirmedClientFields() map[string]string {
@@ -3453,8 +4030,9 @@ func (Store) sortableAuthConfirmedClientFields() map[string]string {
 // At least one of the collected columns must be flagged as unique, otherwise fn appends primary keys at the end
 //
 // Known issue:
-//   when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
-//   undeleted items)
+//
+//	when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
+//	undeleted items)
 //
 // This function is auto-generated
 func (s *Store) collectAuthConfirmedClientCursorValues(res *systemType.AuthConfirmedClient, cc ...*filter.SortExpr) *filter.PagingCursor {
@@ -3860,7 +4438,7 @@ func (s *Store) LookupAuthOa2tokenByRefresh(ctx context.Context, refresh string)
 
 // sortableAuthOa2tokenFields returns all <no value> columns flagged as sortable
 //
-// With optional string arg, all columns are returned aliased
+// # With optional string arg, all columns are returned aliased
 //
 // This function is auto-generated
 func (Store) sortableAuthOa2tokenFields() map[string]string {
@@ -3880,8 +4458,9 @@ func (Store) sortableAuthOa2tokenFields() map[string]string {
 // At least one of the collected columns must be flagged as unique, otherwise fn appends primary keys at the end
 //
 // Known issue:
-//   when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
-//   undeleted items)
+//
+//	when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
+//	undeleted items)
 //
 // This function is auto-generated
 func (s *Store) collectAuthOa2tokenCursorValues(res *systemType.AuthOa2token, cc ...*filter.SortExpr) *filter.PagingCursor {
@@ -4162,7 +4741,7 @@ func (s *Store) LookupAuthSessionByID(ctx context.Context, id string) (_ *system
 
 // sortableAuthSessionFields returns all <no value> columns flagged as sortable
 //
-// With optional string arg, all columns are returned aliased
+// # With optional string arg, all columns are returned aliased
 //
 // This function is auto-generated
 func (Store) sortableAuthSessionFields() map[string]string {
@@ -4182,8 +4761,9 @@ func (Store) sortableAuthSessionFields() map[string]string {
 // At least one of the collected columns must be flagged as unique, otherwise fn appends primary keys at the end
 //
 // Known issue:
-//   when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
-//   undeleted items)
+//
+//	when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
+//	undeleted items)
 //
 // This function is auto-generated
 func (s *Store) collectAuthSessionCursorValues(res *systemType.AuthSession, cc ...*filter.SortExpr) *filter.PagingCursor {
@@ -4398,13 +4978,13 @@ func (s *Store) SearchAutomationSessions(ctx context.Context, f automationType.S
 // fetchFullPageOfAutomationSessions collects all requested results.
 //
 // Function applies:
-//  - cursor conditions (where ...)
-//  - limit
+//   - cursor conditions (where ...)
+//   - limit
 //
 // Main responsibility of this function is to perform additional sequential queries in case when not enough results
 // are collected due to failed check on a specific row (by check fn).
 //
-// Function then moves cursor to the last item fetched
+// # Function then moves cursor to the last item fetched
 //
 // This function is auto-generated
 func (s *Store) fetchFullPageOfAutomationSessions(
@@ -4683,7 +5263,7 @@ func (s *Store) LookupAutomationSessionByID(ctx context.Context, id uint64) (_ *
 
 // sortableAutomationSessionFields returns all <no value> columns flagged as sortable
 //
-// With optional string arg, all columns are returned aliased
+// # With optional string arg, all columns are returned aliased
 //
 // This function is auto-generated
 func (Store) sortableAutomationSessionFields() map[string]string {
@@ -4714,8 +5294,9 @@ func (Store) sortableAutomationSessionFields() map[string]string {
 // At least one of the collected columns must be flagged as unique, otherwise fn appends primary keys at the end
 //
 // Known issue:
-//   when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
-//   undeleted items)
+//
+//	when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
+//	undeleted items)
 //
 // This function is auto-generated
 func (s *Store) collectAutomationSessionCursorValues(res *automationType.Session, cc ...*filter.SortExpr) *filter.PagingCursor {
@@ -4942,13 +5523,13 @@ func (s *Store) SearchAutomationTriggers(ctx context.Context, f automationType.T
 // fetchFullPageOfAutomationTriggers collects all requested results.
 //
 // Function applies:
-//  - cursor conditions (where ...)
-//  - limit
+//   - cursor conditions (where ...)
+//   - limit
 //
 // Main responsibility of this function is to perform additional sequential queries in case when not enough results
 // are collected due to failed check on a specific row (by check fn).
 //
-// Function then moves cursor to the last item fetched
+// # Function then moves cursor to the last item fetched
 //
 // This function is auto-generated
 func (s *Store) fetchFullPageOfAutomationTriggers(
@@ -5227,7 +5808,7 @@ func (s *Store) LookupAutomationTriggerByID(ctx context.Context, id uint64) (_ *
 
 // sortableAutomationTriggerFields returns all <no value> columns flagged as sortable
 //
-// With optional string arg, all columns are returned aliased
+// # With optional string arg, all columns are returned aliased
 //
 // This function is auto-generated
 func (Store) sortableAutomationTriggerFields() map[string]string {
@@ -5256,8 +5837,9 @@ func (Store) sortableAutomationTriggerFields() map[string]string {
 // At least one of the collected columns must be flagged as unique, otherwise fn appends primary keys at the end
 //
 // Known issue:
-//   when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
-//   undeleted items)
+//
+//	when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
+//	undeleted items)
 //
 // This function is auto-generated
 func (s *Store) collectAutomationTriggerCursorValues(res *automationType.Trigger, cc ...*filter.SortExpr) *filter.PagingCursor {
@@ -5482,13 +6064,13 @@ func (s *Store) SearchAutomationWorkflows(ctx context.Context, f automationType.
 // fetchFullPageOfAutomationWorkflows collects all requested results.
 //
 // Function applies:
-//  - cursor conditions (where ...)
-//  - limit
+//   - cursor conditions (where ...)
+//   - limit
 //
 // Main responsibility of this function is to perform additional sequential queries in case when not enough results
 // are collected due to failed check on a specific row (by check fn).
 //
-// Function then moves cursor to the last item fetched
+// # Function then moves cursor to the last item fetched
 //
 // This function is auto-generated
 func (s *Store) fetchFullPageOfAutomationWorkflows(
@@ -5810,7 +6392,7 @@ func (s *Store) LookupAutomationWorkflowByHandle(ctx context.Context, handle str
 
 // sortableAutomationWorkflowFields returns all <no value> columns flagged as sortable
 //
-// With optional string arg, all columns are returned aliased
+// # With optional string arg, all columns are returned aliased
 //
 // This function is auto-generated
 func (Store) sortableAutomationWorkflowFields() map[string]string {
@@ -5834,8 +6416,9 @@ func (Store) sortableAutomationWorkflowFields() map[string]string {
 // At least one of the collected columns must be flagged as unique, otherwise fn appends primary keys at the end
 //
 // Known issue:
-//   when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
-//   undeleted items)
+//
+//	when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
+//	undeleted items)
 //
 // This function is auto-generated
 func (s *Store) collectAutomationWorkflowCursorValues(res *automationType.Workflow, cc ...*filter.SortExpr) *filter.PagingCursor {
@@ -6084,13 +6667,13 @@ func (s *Store) SearchComposeAttachments(ctx context.Context, f composeType.Atta
 // fetchFullPageOfComposeAttachments collects all requested results.
 //
 // Function applies:
-//  - cursor conditions (where ...)
-//  - limit
+//   - cursor conditions (where ...)
+//   - limit
 //
 // Main responsibility of this function is to perform additional sequential queries in case when not enough results
 // are collected due to failed check on a specific row (by check fn).
 //
-// Function then moves cursor to the last item fetched
+// # Function then moves cursor to the last item fetched
 //
 // This function is auto-generated
 func (s *Store) fetchFullPageOfComposeAttachments(
@@ -6367,7 +6950,7 @@ func (s *Store) LookupComposeAttachmentByID(ctx context.Context, id uint64) (_ *
 
 // sortableComposeAttachmentFields returns all <no value> columns flagged as sortable
 //
-// With optional string arg, all columns are returned aliased
+// # With optional string arg, all columns are returned aliased
 //
 // This function is auto-generated
 func (Store) sortableComposeAttachmentFields() map[string]string {
@@ -6393,8 +6976,9 @@ func (Store) sortableComposeAttachmentFields() map[string]string {
 // At least one of the collected columns must be flagged as unique, otherwise fn appends primary keys at the end
 //
 // Known issue:
-//   when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
-//   undeleted items)
+//
+//	when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
+//	undeleted items)
 //
 // This function is auto-generated
 func (s *Store) collectComposeAttachmentCursorValues(res *composeType.Attachment, cc ...*filter.SortExpr) *filter.PagingCursor {
@@ -6617,13 +7201,13 @@ func (s *Store) SearchComposeCharts(ctx context.Context, f composeType.ChartFilt
 // fetchFullPageOfComposeCharts collects all requested results.
 //
 // Function applies:
-//  - cursor conditions (where ...)
-//  - limit
+//   - cursor conditions (where ...)
+//   - limit
 //
 // Main responsibility of this function is to perform additional sequential queries in case when not enough results
 // are collected due to failed check on a specific row (by check fn).
 //
-// Function then moves cursor to the last item fetched
+// # Function then moves cursor to the last item fetched
 //
 // This function is auto-generated
 func (s *Store) fetchFullPageOfComposeCharts(
@@ -6944,7 +7528,7 @@ func (s *Store) LookupComposeChartByNamespaceIDHandle(ctx context.Context, names
 
 // sortableComposeChartFields returns all <no value> columns flagged as sortable
 //
-// With optional string arg, all columns are returned aliased
+// # With optional string arg, all columns are returned aliased
 //
 // This function is auto-generated
 func (Store) sortableComposeChartFields() map[string]string {
@@ -6968,8 +7552,9 @@ func (Store) sortableComposeChartFields() map[string]string {
 // At least one of the collected columns must be flagged as unique, otherwise fn appends primary keys at the end
 //
 // Known issue:
-//   when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
-//   undeleted items)
+//
+//	when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
+//	undeleted items)
 //
 // This function is auto-generated
 func (s *Store) collectComposeChartCursorValues(res *composeType.Chart, cc ...*filter.SortExpr) *filter.PagingCursor {
@@ -7191,13 +7776,13 @@ func (s *Store) SearchComposeModules(ctx context.Context, f composeType.ModuleFi
 // fetchFullPageOfComposeModules collects all requested results.
 //
 // Function applies:
-//  - cursor conditions (where ...)
-//  - limit
+//   - cursor conditions (where ...)
+//   - limit
 //
 // Main responsibility of this function is to perform additional sequential queries in case when not enough results
 // are collected due to failed check on a specific row (by check fn).
 //
-// Function then moves cursor to the last item fetched
+// # Function then moves cursor to the last item fetched
 //
 // This function is auto-generated
 func (s *Store) fetchFullPageOfComposeModules(
@@ -7560,7 +8145,7 @@ func (s *Store) LookupComposeModuleByID(ctx context.Context, id uint64) (_ *comp
 
 // sortableComposeModuleFields returns all <no value> columns flagged as sortable
 //
-// With optional string arg, all columns are returned aliased
+// # With optional string arg, all columns are returned aliased
 //
 // This function is auto-generated
 func (Store) sortableComposeModuleFields() map[string]string {
@@ -7584,8 +8169,9 @@ func (Store) sortableComposeModuleFields() map[string]string {
 // At least one of the collected columns must be flagged as unique, otherwise fn appends primary keys at the end
 //
 // Known issue:
-//   when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
-//   undeleted items)
+//
+//	when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
+//	undeleted items)
 //
 // This function is auto-generated
 func (s *Store) collectComposeModuleCursorValues(res *composeType.Module, cc ...*filter.SortExpr) *filter.PagingCursor {
@@ -7947,7 +8533,7 @@ func (s *Store) LookupComposeModuleFieldByID(ctx context.Context, id uint64) (_ 
 
 // sortableComposeModuleFieldFields returns all <no value> columns flagged as sortable
 //
-// With optional string arg, all columns are returned aliased
+// # With optional string arg, all columns are returned aliased
 //
 // This function is auto-generated
 func (Store) sortableComposeModuleFieldFields() map[string]string {
@@ -7973,8 +8559,9 @@ func (Store) sortableComposeModuleFieldFields() map[string]string {
 // At least one of the collected columns must be flagged as unique, otherwise fn appends primary keys at the end
 //
 // Known issue:
-//   when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
-//   undeleted items)
+//
+//	when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
+//	undeleted items)
 //
 // This function is auto-generated
 func (s *Store) collectComposeModuleFieldCursorValues(res *composeType.ModuleField, cc ...*filter.SortExpr) *filter.PagingCursor {
@@ -8231,13 +8818,13 @@ func (s *Store) SearchComposeNamespaces(ctx context.Context, f composeType.Names
 // fetchFullPageOfComposeNamespaces collects all requested results.
 //
 // Function applies:
-//  - cursor conditions (where ...)
-//  - limit
+//   - cursor conditions (where ...)
+//   - limit
 //
 // Main responsibility of this function is to perform additional sequential queries in case when not enough results
 // are collected due to failed check on a specific row (by check fn).
 //
-// Function then moves cursor to the last item fetched
+// # Function then moves cursor to the last item fetched
 //
 // This function is auto-generated
 func (s *Store) fetchFullPageOfComposeNamespaces(
@@ -8557,7 +9144,7 @@ func (s *Store) LookupComposeNamespaceByID(ctx context.Context, id uint64) (_ *c
 
 // sortableComposeNamespaceFields returns all <no value> columns flagged as sortable
 //
-// With optional string arg, all columns are returned aliased
+// # With optional string arg, all columns are returned aliased
 //
 // This function is auto-generated
 func (Store) sortableComposeNamespaceFields() map[string]string {
@@ -8581,8 +9168,9 @@ func (Store) sortableComposeNamespaceFields() map[string]string {
 // At least one of the collected columns must be flagged as unique, otherwise fn appends primary keys at the end
 //
 // Known issue:
-//   when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
-//   undeleted items)
+//
+//	when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
+//	undeleted items)
 //
 // This function is auto-generated
 func (s *Store) collectComposeNamespaceCursorValues(res *composeType.Namespace, cc ...*filter.SortExpr) *filter.PagingCursor {
@@ -8830,13 +9418,13 @@ func (s *Store) SearchComposePages(ctx context.Context, f composeType.PageFilter
 // fetchFullPageOfComposePages collects all requested results.
 //
 // Function applies:
-//  - cursor conditions (where ...)
-//  - limit
+//   - cursor conditions (where ...)
+//   - limit
 //
 // Main responsibility of this function is to perform additional sequential queries in case when not enough results
 // are collected due to failed check on a specific row (by check fn).
 //
-// Function then moves cursor to the last item fetched
+// # Function then moves cursor to the last item fetched
 //
 // This function is auto-generated
 func (s *Store) fetchFullPageOfComposePages(
@@ -9199,7 +9787,7 @@ func (s *Store) LookupComposePageByID(ctx context.Context, id uint64) (_ *compos
 
 // sortableComposePageFields returns all <no value> columns flagged as sortable
 //
-// With optional string arg, all columns are returned aliased
+// # With optional string arg, all columns are returned aliased
 //
 // This function is auto-generated
 func (Store) sortableComposePageFields() map[string]string {
@@ -9226,8 +9814,9 @@ func (Store) sortableComposePageFields() map[string]string {
 // At least one of the collected columns must be flagged as unique, otherwise fn appends primary keys at the end
 //
 // Known issue:
-//   when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
-//   undeleted items)
+//
+//	when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
+//	undeleted items)
 //
 // This function is auto-generated
 func (s *Store) collectComposePageCursorValues(res *composeType.Page, cc ...*filter.SortExpr) *filter.PagingCursor {
@@ -9521,7 +10110,7 @@ func (s *Store) LookupCredentialByID(ctx context.Context, id uint64) (_ *systemT
 
 // sortableCredentialFields returns all <no value> columns flagged as sortable
 //
-// With optional string arg, all columns are returned aliased
+// # With optional string arg, all columns are returned aliased
 //
 // This function is auto-generated
 func (Store) sortableCredentialFields() map[string]string {
@@ -9547,8 +10136,9 @@ func (Store) sortableCredentialFields() map[string]string {
 // At least one of the collected columns must be flagged as unique, otherwise fn appends primary keys at the end
 //
 // Known issue:
-//   when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
-//   undeleted items)
+//
+//	when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
+//	undeleted items)
 //
 // This function is auto-generated
 func (s *Store) collectCredentialCursorValues(res *systemType.Credential, cc ...*filter.SortExpr) *filter.PagingCursor {
@@ -9769,13 +10359,13 @@ func (s *Store) SearchDalConnections(ctx context.Context, f systemType.DalConnec
 // fetchFullPageOfDalConnections collects all requested results.
 //
 // Function applies:
-//  - cursor conditions (where ...)
-//  - limit
+//   - cursor conditions (where ...)
+//   - limit
 //
 // Main responsibility of this function is to perform additional sequential queries in case when not enough results
 // are collected due to failed check on a specific row (by check fn).
 //
-// Function then moves cursor to the last item fetched
+// # Function then moves cursor to the last item fetched
 //
 // This function is auto-generated
 func (s *Store) fetchFullPageOfDalConnections(
@@ -10097,7 +10687,7 @@ func (s *Store) LookupDalConnectionByHandle(ctx context.Context, handle string) 
 
 // sortableDalConnectionFields returns all <no value> columns flagged as sortable
 //
-// With optional string arg, all columns are returned aliased
+// # With optional string arg, all columns are returned aliased
 //
 // This function is auto-generated
 func (Store) sortableDalConnectionFields() map[string]string {
@@ -10121,8 +10711,9 @@ func (Store) sortableDalConnectionFields() map[string]string {
 // At least one of the collected columns must be flagged as unique, otherwise fn appends primary keys at the end
 //
 // Known issue:
-//   when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
-//   undeleted items)
+//
+//	when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
+//	undeleted items)
 //
 // This function is auto-generated
 func (s *Store) collectDalConnectionCursorValues(res *systemType.DalConnection, cc ...*filter.SortExpr) *filter.PagingCursor {
@@ -10371,13 +10962,13 @@ func (s *Store) SearchDalSensitivityLevels(ctx context.Context, f systemType.Dal
 // fetchFullPageOfDalSensitivityLevels collects all requested results.
 //
 // Function applies:
-//  - cursor conditions (where ...)
-//  - limit
+//   - cursor conditions (where ...)
+//   - limit
 //
 // Main responsibility of this function is to perform additional sequential queries in case when not enough results
 // are collected due to failed check on a specific row (by check fn).
 //
-// Function then moves cursor to the last item fetched
+// # Function then moves cursor to the last item fetched
 //
 // This function is auto-generated
 func (s *Store) fetchFullPageOfDalSensitivityLevels(
@@ -10656,7 +11247,7 @@ func (s *Store) LookupDalSensitivityLevelByID(ctx context.Context, id uint64) (_
 
 // sortableDalSensitivityLevelFields returns all <no value> columns flagged as sortable
 //
-// With optional string arg, all columns are returned aliased
+// # With optional string arg, all columns are returned aliased
 //
 // This function is auto-generated
 func (Store) sortableDalSensitivityLevelFields() map[string]string {
@@ -10680,8 +11271,9 @@ func (Store) sortableDalSensitivityLevelFields() map[string]string {
 // At least one of the collected columns must be flagged as unique, otherwise fn appends primary keys at the end
 //
 // Known issue:
-//   when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
-//   undeleted items)
+//
+//	when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
+//	undeleted items)
 //
 // This function is auto-generated
 func (s *Store) collectDalSensitivityLevelCursorValues(res *systemType.DalSensitivityLevel, cc ...*filter.SortExpr) *filter.PagingCursor {
@@ -10903,13 +11495,13 @@ func (s *Store) SearchDataPrivacyRequests(ctx context.Context, f systemType.Data
 // fetchFullPageOfDataPrivacyRequests collects all requested results.
 //
 // Function applies:
-//  - cursor conditions (where ...)
-//  - limit
+//   - cursor conditions (where ...)
+//   - limit
 //
 // Main responsibility of this function is to perform additional sequential queries in case when not enough results
 // are collected due to failed check on a specific row (by check fn).
 //
-// Function then moves cursor to the last item fetched
+// # Function then moves cursor to the last item fetched
 //
 // This function is auto-generated
 func (s *Store) fetchFullPageOfDataPrivacyRequests(
@@ -11188,7 +11780,7 @@ func (s *Store) LookupDataPrivacyRequestByID(ctx context.Context, id uint64) (_ 
 
 // sortableDataPrivacyRequestFields returns all <no value> columns flagged as sortable
 //
-// With optional string arg, all columns are returned aliased
+// # With optional string arg, all columns are returned aliased
 //
 // This function is auto-generated
 func (Store) sortableDataPrivacyRequestFields() map[string]string {
@@ -11216,8 +11808,9 @@ func (Store) sortableDataPrivacyRequestFields() map[string]string {
 // At least one of the collected columns must be flagged as unique, otherwise fn appends primary keys at the end
 //
 // Known issue:
-//   when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
-//   undeleted items)
+//
+//	when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
+//	undeleted items)
 //
 // This function is auto-generated
 func (s *Store) collectDataPrivacyRequestCursorValues(res *systemType.DataPrivacyRequest, cc ...*filter.SortExpr) *filter.PagingCursor {
@@ -11442,13 +12035,13 @@ func (s *Store) SearchDataPrivacyRequestComments(ctx context.Context, f systemTy
 // fetchFullPageOfDataPrivacyRequestComments collects all requested results.
 //
 // Function applies:
-//  - cursor conditions (where ...)
-//  - limit
+//   - cursor conditions (where ...)
+//   - limit
 //
 // Main responsibility of this function is to perform additional sequential queries in case when not enough results
 // are collected due to failed check on a specific row (by check fn).
 //
-// Function then moves cursor to the last item fetched
+// # Function then moves cursor to the last item fetched
 //
 // This function is auto-generated
 func (s *Store) fetchFullPageOfDataPrivacyRequestComments(
@@ -11685,7 +12278,7 @@ func (s *Store) QueryDataPrivacyRequestComments(
 
 // sortableDataPrivacyRequestCommentFields returns all <no value> columns flagged as sortable
 //
-// With optional string arg, all columns are returned aliased
+// # With optional string arg, all columns are returned aliased
 //
 // This function is auto-generated
 func (Store) sortableDataPrivacyRequestCommentFields() map[string]string {
@@ -11707,8 +12300,9 @@ func (Store) sortableDataPrivacyRequestCommentFields() map[string]string {
 // At least one of the collected columns must be flagged as unique, otherwise fn appends primary keys at the end
 //
 // Known issue:
-//   when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
-//   undeleted items)
+//
+//	when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
+//	undeleted items)
 //
 // This function is auto-generated
 func (s *Store) collectDataPrivacyRequestCommentCursorValues(res *systemType.DataPrivacyRequestComment, cc ...*filter.SortExpr) *filter.PagingCursor {
@@ -11925,13 +12519,13 @@ func (s *Store) SearchFederationExposedModules(ctx context.Context, f federation
 // fetchFullPageOfFederationExposedModules collects all requested results.
 //
 // Function applies:
-//  - cursor conditions (where ...)
-//  - limit
+//   - cursor conditions (where ...)
+//   - limit
 //
 // Main responsibility of this function is to perform additional sequential queries in case when not enough results
 // are collected due to failed check on a specific row (by check fn).
 //
-// Function then moves cursor to the last item fetched
+// # Function then moves cursor to the last item fetched
 //
 // This function is auto-generated
 func (s *Store) fetchFullPageOfFederationExposedModules(
@@ -12210,7 +12804,7 @@ func (s *Store) LookupFederationExposedModuleByID(ctx context.Context, id uint64
 
 // sortableFederationExposedModuleFields returns all <no value> columns flagged as sortable
 //
-// With optional string arg, all columns are returned aliased
+// # With optional string arg, all columns are returned aliased
 //
 // This function is auto-generated
 func (Store) sortableFederationExposedModuleFields() map[string]string {
@@ -12236,8 +12830,9 @@ func (Store) sortableFederationExposedModuleFields() map[string]string {
 // At least one of the collected columns must be flagged as unique, otherwise fn appends primary keys at the end
 //
 // Known issue:
-//   when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
-//   undeleted items)
+//
+//	when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
+//	undeleted items)
 //
 // This function is auto-generated
 func (s *Store) collectFederationExposedModuleCursorValues(res *federationType.ExposedModule, cc ...*filter.SortExpr) *filter.PagingCursor {
@@ -12452,13 +13047,13 @@ func (s *Store) SearchFederationModuleMappings(ctx context.Context, f federation
 // fetchFullPageOfFederationModuleMappings collects all requested results.
 //
 // Function applies:
-//  - cursor conditions (where ...)
-//  - limit
+//   - cursor conditions (where ...)
+//   - limit
 //
 // Main responsibility of this function is to perform additional sequential queries in case when not enough results
 // are collected due to failed check on a specific row (by check fn).
 //
-// Function then moves cursor to the last item fetched
+// # Function then moves cursor to the last item fetched
 //
 // This function is auto-generated
 func (s *Store) fetchFullPageOfFederationModuleMappings(
@@ -12781,7 +13376,7 @@ func (s *Store) LookupFederationModuleMappingByFederationModuleID(ctx context.Co
 
 // sortableFederationModuleMappingFields returns all <no value> columns flagged as sortable
 //
-// With optional string arg, all columns are returned aliased
+// # With optional string arg, all columns are returned aliased
 //
 // This function is auto-generated
 func (Store) sortableFederationModuleMappingFields() map[string]string {
@@ -12804,8 +13399,9 @@ func (Store) sortableFederationModuleMappingFields() map[string]string {
 // At least one of the collected columns must be flagged as unique, otherwise fn appends primary keys at the end
 //
 // Known issue:
-//   when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
-//   undeleted items)
+//
+//	when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
+//	undeleted items)
 //
 // This function is auto-generated
 func (s *Store) collectFederationModuleMappingCursorValues(res *federationType.ModuleMapping, cc ...*filter.SortExpr) *filter.PagingCursor {
@@ -13017,13 +13613,13 @@ func (s *Store) SearchFederationNodes(ctx context.Context, f federationType.Node
 // fetchFullPageOfFederationNodes collects all requested results.
 //
 // Function applies:
-//  - cursor conditions (where ...)
-//  - limit
+//   - cursor conditions (where ...)
+//   - limit
 //
 // Main responsibility of this function is to perform additional sequential queries in case when not enough results
 // are collected due to failed check on a specific row (by check fn).
 //
-// Function then moves cursor to the last item fetched
+// # Function then moves cursor to the last item fetched
 //
 // This function is auto-generated
 func (s *Store) fetchFullPageOfFederationNodes(
@@ -13383,7 +13979,7 @@ func (s *Store) LookupFederationNodeBySharedNodeID(ctx context.Context, sharedNo
 
 // sortableFederationNodeFields returns all <no value> columns flagged as sortable
 //
-// With optional string arg, all columns are returned aliased
+// # With optional string arg, all columns are returned aliased
 //
 // This function is auto-generated
 func (Store) sortableFederationNodeFields() map[string]string {
@@ -13412,8 +14008,9 @@ func (Store) sortableFederationNodeFields() map[string]string {
 // At least one of the collected columns must be flagged as unique, otherwise fn appends primary keys at the end
 //
 // Known issue:
-//   when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
-//   undeleted items)
+//
+//	when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
+//	undeleted items)
 //
 // This function is auto-generated
 func (s *Store) collectFederationNodeCursorValues(res *federationType.Node, cc ...*filter.SortExpr) *filter.PagingCursor {
@@ -13640,13 +14237,13 @@ func (s *Store) SearchFederationNodeSyncs(ctx context.Context, f federationType.
 // fetchFullPageOfFederationNodeSyncs collects all requested results.
 //
 // Function applies:
-//  - cursor conditions (where ...)
-//  - limit
+//   - cursor conditions (where ...)
+//   - limit
 //
 // Main responsibility of this function is to perform additional sequential queries in case when not enough results
 // are collected due to failed check on a specific row (by check fn).
 //
-// Function then moves cursor to the last item fetched
+// # Function then moves cursor to the last item fetched
 //
 // This function is auto-generated
 func (s *Store) fetchFullPageOfFederationNodeSyncs(
@@ -13970,7 +14567,7 @@ func (s *Store) LookupFederationNodeSyncByNodeIDModuleIDSyncTypeSyncStatus(ctx c
 
 // sortableFederationNodeSyncFields returns all <no value> columns flagged as sortable
 //
-// With optional string arg, all columns are returned aliased
+// # With optional string arg, all columns are returned aliased
 //
 // This function is auto-generated
 func (Store) sortableFederationNodeSyncFields() map[string]string {
@@ -13995,8 +14592,9 @@ func (Store) sortableFederationNodeSyncFields() map[string]string {
 // At least one of the collected columns must be flagged as unique, otherwise fn appends primary keys at the end
 //
 // Known issue:
-//   when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
-//   undeleted items)
+//
+//	when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
+//	undeleted items)
 //
 // This function is auto-generated
 func (s *Store) collectFederationNodeSyncCursorValues(res *federationType.NodeSync, cc ...*filter.SortExpr) *filter.PagingCursor {
@@ -14215,13 +14813,13 @@ func (s *Store) SearchFederationSharedModules(ctx context.Context, f federationT
 // fetchFullPageOfFederationSharedModules collects all requested results.
 //
 // Function applies:
-//  - cursor conditions (where ...)
-//  - limit
+//   - cursor conditions (where ...)
+//   - limit
 //
 // Main responsibility of this function is to perform additional sequential queries in case when not enough results
 // are collected due to failed check on a specific row (by check fn).
 //
-// Function then moves cursor to the last item fetched
+// # Function then moves cursor to the last item fetched
 //
 // This function is auto-generated
 func (s *Store) fetchFullPageOfFederationSharedModules(
@@ -14500,7 +15098,7 @@ func (s *Store) LookupFederationSharedModuleByID(ctx context.Context, id uint64)
 
 // sortableFederationSharedModuleFields returns all <no value> columns flagged as sortable
 //
-// With optional string arg, all columns are returned aliased
+// # With optional string arg, all columns are returned aliased
 //
 // This function is auto-generated
 func (Store) sortableFederationSharedModuleFields() map[string]string {
@@ -14528,8 +15126,9 @@ func (Store) sortableFederationSharedModuleFields() map[string]string {
 // At least one of the collected columns must be flagged as unique, otherwise fn appends primary keys at the end
 //
 // Known issue:
-//   when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
-//   undeleted items)
+//
+//	when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
+//	undeleted items)
 //
 // This function is auto-generated
 func (s *Store) collectFederationSharedModuleCursorValues(res *federationType.SharedModule, cc ...*filter.SortExpr) *filter.PagingCursor {
@@ -14827,7 +15426,7 @@ func (s *Store) LookupFlagByKindResourceIDOwnedByName(ctx context.Context, kind 
 
 // sortableFlagFields returns all <no value> columns flagged as sortable
 //
-// With optional string arg, all columns are returned aliased
+// # With optional string arg, all columns are returned aliased
 //
 // This function is auto-generated
 func (Store) sortableFlagFields() map[string]string {
@@ -14848,8 +15447,9 @@ func (Store) sortableFlagFields() map[string]string {
 // At least one of the collected columns must be flagged as unique, otherwise fn appends primary keys at the end
 //
 // Known issue:
-//   when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
-//   undeleted items)
+//
+//	when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
+//	undeleted items)
 //
 // This function is auto-generated
 func (s *Store) collectFlagCursorValues(res *flagType.Flag, cc ...*filter.SortExpr) *filter.PagingCursor {
@@ -15151,7 +15751,7 @@ func (s *Store) LookupLabelByKindResourceIDName(ctx context.Context, kind string
 
 // sortableLabelFields returns all <no value> columns flagged as sortable
 //
-// With optional string arg, all columns are returned aliased
+// # With optional string arg, all columns are returned aliased
 //
 // This function is auto-generated
 func (Store) sortableLabelFields() map[string]string {
@@ -15170,8 +15770,9 @@ func (Store) sortableLabelFields() map[string]string {
 // At least one of the collected columns must be flagged as unique, otherwise fn appends primary keys at the end
 //
 // Known issue:
-//   when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
-//   undeleted items)
+//
+//	when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
+//	undeleted items)
 //
 // This function is auto-generated
 func (s *Store) collectLabelCursorValues(res *labelsType.Label, cc ...*filter.SortExpr) *filter.PagingCursor {
@@ -15396,13 +15997,13 @@ func (s *Store) SearchQueues(ctx context.Context, f systemType.QueueFilter) (set
 // fetchFullPageOfQueues collects all requested results.
 //
 // Function applies:
-//  - cursor conditions (where ...)
-//  - limit
+//   - cursor conditions (where ...)
+//   - limit
 //
 // Main responsibility of this function is to perform additional sequential queries in case when not enough results
 // are collected due to failed check on a specific row (by check fn).
 //
-// Function then moves cursor to the last item fetched
+// # Function then moves cursor to the last item fetched
 //
 // This function is auto-generated
 func (s *Store) fetchFullPageOfQueues(
@@ -15719,7 +16320,7 @@ func (s *Store) LookupQueueByQueue(ctx context.Context, queue string) (_ *system
 
 // sortableQueueFields returns all <no value> columns flagged as sortable
 //
-// With optional string arg, all columns are returned aliased
+// # With optional string arg, all columns are returned aliased
 //
 // This function is auto-generated
 func (Store) sortableQueueFields() map[string]string {
@@ -15743,8 +16344,9 @@ func (Store) sortableQueueFields() map[string]string {
 // At least one of the collected columns must be flagged as unique, otherwise fn appends primary keys at the end
 //
 // Known issue:
-//   when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
-//   undeleted items)
+//
+//	when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
+//	undeleted items)
 //
 // This function is auto-generated
 func (s *Store) collectQueueCursorValues(res *systemType.Queue, cc ...*filter.SortExpr) *filter.PagingCursor {
@@ -15965,13 +16567,13 @@ func (s *Store) SearchQueueMessages(ctx context.Context, f systemType.QueueMessa
 // fetchFullPageOfQueueMessages collects all requested results.
 //
 // Function applies:
-//  - cursor conditions (where ...)
-//  - limit
+//   - cursor conditions (where ...)
+//   - limit
 //
 // Main responsibility of this function is to perform additional sequential queries in case when not enough results
 // are collected due to failed check on a specific row (by check fn).
 //
-// Function then moves cursor to the last item fetched
+// # Function then moves cursor to the last item fetched
 //
 // This function is auto-generated
 func (s *Store) fetchFullPageOfQueueMessages(
@@ -16196,7 +16798,7 @@ func (s *Store) QueryQueueMessages(
 
 // sortableQueueMessageFields returns all <no value> columns flagged as sortable
 //
-// With optional string arg, all columns are returned aliased
+// # With optional string arg, all columns are returned aliased
 //
 // This function is auto-generated
 func (Store) sortableQueueMessageFields() map[string]string {
@@ -16215,8 +16817,9 @@ func (Store) sortableQueueMessageFields() map[string]string {
 // At least one of the collected columns must be flagged as unique, otherwise fn appends primary keys at the end
 //
 // Known issue:
-//   when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
-//   undeleted items)
+//
+//	when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
+//	undeleted items)
 //
 // This function is auto-generated
 func (s *Store) collectQueueMessageCursorValues(res *systemType.QueueMessage, cc ...*filter.SortExpr) *filter.PagingCursor {
@@ -16461,7 +17064,7 @@ func (s *Store) QueryRbacRules(
 
 // sortableRbacRuleFields returns all <no value> columns flagged as sortable
 //
-// With optional string arg, all columns are returned aliased
+// # With optional string arg, all columns are returned aliased
 //
 // This function is auto-generated
 func (Store) sortableRbacRuleFields() map[string]string {
@@ -16480,8 +17083,9 @@ func (Store) sortableRbacRuleFields() map[string]string {
 // At least one of the collected columns must be flagged as unique, otherwise fn appends primary keys at the end
 //
 // Known issue:
-//   when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
-//   undeleted items)
+//
+//	when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
+//	undeleted items)
 //
 // This function is auto-generated
 func (s *Store) collectRbacRuleCursorValues(res *rbacType.Rule, cc ...*filter.SortExpr) *filter.PagingCursor {
@@ -16706,13 +17310,13 @@ func (s *Store) SearchReminders(ctx context.Context, f systemType.ReminderFilter
 // fetchFullPageOfReminders collects all requested results.
 //
 // Function applies:
-//  - cursor conditions (where ...)
-//  - limit
+//   - cursor conditions (where ...)
+//   - limit
 //
 // Main responsibility of this function is to perform additional sequential queries in case when not enough results
 // are collected due to failed check on a specific row (by check fn).
 //
-// Function then moves cursor to the last item fetched
+// # Function then moves cursor to the last item fetched
 //
 // This function is auto-generated
 func (s *Store) fetchFullPageOfReminders(
@@ -16989,7 +17593,7 @@ func (s *Store) LookupReminderByID(ctx context.Context, id uint64) (_ *systemTyp
 
 // sortableReminderFields returns all <no value> columns flagged as sortable
 //
-// With optional string arg, all columns are returned aliased
+// # With optional string arg, all columns are returned aliased
 //
 // This function is auto-generated
 func (Store) sortableReminderFields() map[string]string {
@@ -17018,8 +17622,9 @@ func (Store) sortableReminderFields() map[string]string {
 // At least one of the collected columns must be flagged as unique, otherwise fn appends primary keys at the end
 //
 // Known issue:
-//   when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
-//   undeleted items)
+//
+//	when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
+//	undeleted items)
 //
 // This function is auto-generated
 func (s *Store) collectReminderCursorValues(res *systemType.Reminder, cc ...*filter.SortExpr) *filter.PagingCursor {
@@ -17244,13 +17849,13 @@ func (s *Store) SearchReports(ctx context.Context, f systemType.ReportFilter) (s
 // fetchFullPageOfReports collects all requested results.
 //
 // Function applies:
-//  - cursor conditions (where ...)
-//  - limit
+//   - cursor conditions (where ...)
+//   - limit
 //
 // Main responsibility of this function is to perform additional sequential queries in case when not enough results
 // are collected due to failed check on a specific row (by check fn).
 //
-// Function then moves cursor to the last item fetched
+// # Function then moves cursor to the last item fetched
 //
 // This function is auto-generated
 func (s *Store) fetchFullPageOfReports(
@@ -17572,7 +18177,7 @@ func (s *Store) LookupReportByHandle(ctx context.Context, handle string) (_ *sys
 
 // sortableReportFields returns all <no value> columns flagged as sortable
 //
-// With optional string arg, all columns are returned aliased
+// # With optional string arg, all columns are returned aliased
 //
 // This function is auto-generated
 func (Store) sortableReportFields() map[string]string {
@@ -17595,8 +18200,9 @@ func (Store) sortableReportFields() map[string]string {
 // At least one of the collected columns must be flagged as unique, otherwise fn appends primary keys at the end
 //
 // Known issue:
-//   when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
-//   undeleted items)
+//
+//	when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
+//	undeleted items)
 //
 // This function is auto-generated
 func (s *Store) collectReportCursorValues(res *systemType.Report, cc ...*filter.SortExpr) *filter.PagingCursor {
@@ -17869,7 +18475,7 @@ func (s *Store) QueryResourceActivitys(
 
 // sortableResourceActivityFields returns all <no value> columns flagged as sortable
 //
-// With optional string arg, all columns are returned aliased
+// # With optional string arg, all columns are returned aliased
 //
 // This function is auto-generated
 func (Store) sortableResourceActivityFields() map[string]string {
@@ -17886,8 +18492,9 @@ func (Store) sortableResourceActivityFields() map[string]string {
 // At least one of the collected columns must be flagged as unique, otherwise fn appends primary keys at the end
 //
 // Known issue:
-//   when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
-//   undeleted items)
+//
+//	when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
+//	undeleted items)
 //
 // This function is auto-generated
 func (s *Store) collectResourceActivityCursorValues(res *discoveryType.ResourceActivity, cc ...*filter.SortExpr) *filter.PagingCursor {
@@ -18100,13 +18707,13 @@ func (s *Store) SearchResourceTranslations(ctx context.Context, f systemType.Res
 // fetchFullPageOfResourceTranslations collects all requested results.
 //
 // Function applies:
-//  - cursor conditions (where ...)
-//  - limit
+//   - cursor conditions (where ...)
+//   - limit
 //
 // Main responsibility of this function is to perform additional sequential queries in case when not enough results
 // are collected due to failed check on a specific row (by check fn).
 //
-// Function then moves cursor to the last item fetched
+// # Function then moves cursor to the last item fetched
 //
 // This function is auto-generated
 func (s *Store) fetchFullPageOfResourceTranslations(
@@ -18372,7 +18979,7 @@ func (s *Store) LookupResourceTranslationByID(ctx context.Context, id uint64) (_
 
 // sortableResourceTranslationFields returns all <no value> columns flagged as sortable
 //
-// With optional string arg, all columns are returned aliased
+// # With optional string arg, all columns are returned aliased
 //
 // This function is auto-generated
 func (Store) sortableResourceTranslationFields() map[string]string {
@@ -18394,8 +19001,9 @@ func (Store) sortableResourceTranslationFields() map[string]string {
 // At least one of the collected columns must be flagged as unique, otherwise fn appends primary keys at the end
 //
 // Known issue:
-//   when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
-//   undeleted items)
+//
+//	when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
+//	undeleted items)
 //
 // This function is auto-generated
 func (s *Store) collectResourceTranslationCursorValues(res *systemType.ResourceTranslation, cc ...*filter.SortExpr) *filter.PagingCursor {
@@ -18612,13 +19220,13 @@ func (s *Store) SearchRoles(ctx context.Context, f systemType.RoleFilter) (set s
 // fetchFullPageOfRoles collects all requested results.
 //
 // Function applies:
-//  - cursor conditions (where ...)
-//  - limit
+//   - cursor conditions (where ...)
+//   - limit
 //
 // Main responsibility of this function is to perform additional sequential queries in case when not enough results
 // are collected due to failed check on a specific row (by check fn).
 //
-// Function then moves cursor to the last item fetched
+// # Function then moves cursor to the last item fetched
 //
 // This function is auto-generated
 func (s *Store) fetchFullPageOfRoles(
@@ -18983,7 +19591,7 @@ func (s *Store) LookupRoleByName(ctx context.Context, name string) (_ *systemTyp
 
 // sortableRoleFields returns all <no value> columns flagged as sortable
 //
-// With optional string arg, all columns are returned aliased
+// # With optional string arg, all columns are returned aliased
 //
 // This function is auto-generated
 func (Store) sortableRoleFields() map[string]string {
@@ -19009,8 +19617,9 @@ func (Store) sortableRoleFields() map[string]string {
 // At least one of the collected columns must be flagged as unique, otherwise fn appends primary keys at the end
 //
 // Known issue:
-//   when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
-//   undeleted items)
+//
+//	when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
+//	undeleted items)
 //
 // This function is auto-generated
 func (s *Store) collectRoleCursorValues(res *systemType.Role, cc ...*filter.SortExpr) *filter.PagingCursor {
@@ -19315,7 +19924,7 @@ func (s *Store) QueryRoleMembers(
 
 // sortableRoleMemberFields returns all <no value> columns flagged as sortable
 //
-// With optional string arg, all columns are returned aliased
+// # With optional string arg, all columns are returned aliased
 //
 // This function is auto-generated
 func (Store) sortableRoleMemberFields() map[string]string {
@@ -19334,8 +19943,9 @@ func (Store) sortableRoleMemberFields() map[string]string {
 // At least one of the collected columns must be flagged as unique, otherwise fn appends primary keys at the end
 //
 // Known issue:
-//   when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
-//   undeleted items)
+//
+//	when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
+//	undeleted items)
 //
 // This function is auto-generated
 func (s *Store) collectRoleMemberCursorValues(res *systemType.RoleMember, cc ...*filter.SortExpr) *filter.PagingCursor {
@@ -19621,7 +20231,7 @@ func (s *Store) LookupSettingValueByNameOwnedBy(ctx context.Context, name string
 
 // sortableSettingValueFields returns all <no value> columns flagged as sortable
 //
-// With optional string arg, all columns are returned aliased
+// # With optional string arg, all columns are returned aliased
 //
 // This function is auto-generated
 func (Store) sortableSettingValueFields() map[string]string {
@@ -19641,8 +20251,9 @@ func (Store) sortableSettingValueFields() map[string]string {
 // At least one of the collected columns must be flagged as unique, otherwise fn appends primary keys at the end
 //
 // Known issue:
-//   when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
-//   undeleted items)
+//
+//	when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
+//	undeleted items)
 //
 // This function is auto-generated
 func (s *Store) collectSettingValueCursorValues(res *systemType.SettingValue, cc ...*filter.SortExpr) *filter.PagingCursor {
@@ -19862,13 +20473,13 @@ func (s *Store) SearchTemplates(ctx context.Context, f systemType.TemplateFilter
 // fetchFullPageOfTemplates collects all requested results.
 //
 // Function applies:
-//  - cursor conditions (where ...)
-//  - limit
+//   - cursor conditions (where ...)
+//   - limit
 //
 // Main responsibility of this function is to perform additional sequential queries in case when not enough results
 // are collected due to failed check on a specific row (by check fn).
 //
-// Function then moves cursor to the last item fetched
+// # Function then moves cursor to the last item fetched
 //
 // This function is auto-generated
 func (s *Store) fetchFullPageOfTemplates(
@@ -20190,7 +20801,7 @@ func (s *Store) LookupTemplateByHandle(ctx context.Context, handle string) (_ *s
 
 // sortableTemplateFields returns all <no value> columns flagged as sortable
 //
-// With optional string arg, all columns are returned aliased
+// # With optional string arg, all columns are returned aliased
 //
 // This function is auto-generated
 func (Store) sortableTemplateFields() map[string]string {
@@ -20218,8 +20829,9 @@ func (Store) sortableTemplateFields() map[string]string {
 // At least one of the collected columns must be flagged as unique, otherwise fn appends primary keys at the end
 //
 // Known issue:
-//   when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
-//   undeleted items)
+//
+//	when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
+//	undeleted items)
 //
 // This function is auto-generated
 func (s *Store) collectTemplateCursorValues(res *systemType.Template, cc ...*filter.SortExpr) *filter.PagingCursor {
@@ -20474,13 +21086,13 @@ func (s *Store) SearchUsers(ctx context.Context, f systemType.UserFilter) (set s
 // fetchFullPageOfUsers collects all requested results.
 //
 // Function applies:
-//  - cursor conditions (where ...)
-//  - limit
+//   - cursor conditions (where ...)
+//   - limit
 //
 // Main responsibility of this function is to perform additional sequential queries in case when not enough results
 // are collected due to failed check on a specific row (by check fn).
 //
-// Function then moves cursor to the last item fetched
+// # Function then moves cursor to the last item fetched
 //
 // This function is auto-generated
 func (s *Store) fetchFullPageOfUsers(
@@ -20888,7 +21500,7 @@ func (s *Store) LookupUserByUsername(ctx context.Context, username string) (_ *s
 
 // sortableUserFields returns all <no value> columns flagged as sortable
 //
-// With optional string arg, all columns are returned aliased
+// # With optional string arg, all columns are returned aliased
 //
 // This function is auto-generated
 func (Store) sortableUserFields() map[string]string {
@@ -20917,8 +21529,9 @@ func (Store) sortableUserFields() map[string]string {
 // At least one of the collected columns must be flagged as unique, otherwise fn appends primary keys at the end
 //
 // Known issue:
-//   when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
-//   undeleted items)
+//
+//	when collecting cursor values for query that sorts by unique column with partial index (ie: unique handle on
+//	undeleted items)
 //
 // This function is auto-generated
 func (s *Store) collectUserCursorValues(res *systemType.User, cc ...*filter.SortExpr) *filter.PagingCursor {

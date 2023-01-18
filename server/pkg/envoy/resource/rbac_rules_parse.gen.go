@@ -8,6 +8,7 @@ package resource
 
 import (
 	"fmt"
+	acmeTypes "github.com/cortezaproject/corteza/server/acme/types"
 	automationTypes "github.com/cortezaproject/corteza/server/automation/types"
 	composeTypes "github.com/cortezaproject/corteza/server/compose/types"
 	federationTypes "github.com/cortezaproject/corteza/server/federation/types"
@@ -236,6 +237,15 @@ func ParseRule(res string) (string, *Ref, []*Ref, error) {
 		)
 		return resourceType, ref, pp, err
 
+	case acmeTypes.CuserResourceType:
+		if len(path) != 1 {
+			return "", nil, nil, fmt.Errorf("expecting 1 reference components in path, got %d", len(path))
+		}
+		ref, pp, err := AcmeCuserRbacReferences(
+			path[0],
+		)
+		return resourceType, ref, pp, err
+
 	case systemTypes.ComponentResourceType:
 		if len(path) != 0 {
 			return "", nil, nil, fmt.Errorf("expecting 0 reference components in path, got %d", len(path))
@@ -258,6 +268,13 @@ func ParseRule(res string) (string, *Ref, []*Ref, error) {
 		// Component resource, no path
 		return resourceType, nil, nil, nil
 	case federationTypes.ComponentResourceType:
+		if len(path) != 0 {
+			return "", nil, nil, fmt.Errorf("expecting 0 reference components in path, got %d", len(path))
+		}
+
+		// Component resource, no path
+		return resourceType, nil, nil, nil
+	case acmeTypes.ComponentResourceType:
 		if len(path) != 0 {
 			return "", nil, nil, fmt.Errorf("expecting 0 reference components in path, got %d", len(path))
 		}

@@ -8,6 +8,7 @@ package store
 
 import (
 	"context"
+	acmeType "github.com/cortezaproject/corteza/server/acme/types"
 	automationType "github.com/cortezaproject/corteza/server/automation/types"
 	composeType "github.com/cortezaproject/corteza/server/compose/types"
 	federationType "github.com/cortezaproject/corteza/server/federation/types"
@@ -44,6 +45,7 @@ type (
 		Upgrade(context.Context) error
 
 		Healthcheck(context.Context) error
+		AcmeCusers
 		Actionlogs
 		ApigwFilters
 		ApigwRoutes
@@ -86,6 +88,19 @@ type (
 		SettingValues
 		Templates
 		Users
+	}
+
+	AcmeCusers interface {
+		SearchAcmeCusers(ctx context.Context, f acmeType.CuserFilter) (acmeType.CuserSet, acmeType.CuserFilter, error)
+		CreateAcmeCuser(ctx context.Context, rr ...*acmeType.Cuser) error
+		UpdateAcmeCuser(ctx context.Context, rr ...*acmeType.Cuser) error
+		UpsertAcmeCuser(ctx context.Context, rr ...*acmeType.Cuser) error
+		DeleteAcmeCuser(ctx context.Context, rr ...*acmeType.Cuser) error
+
+		DeleteAcmeCuserByID(ctx context.Context, id uint64) error
+		TruncateAcmeCusers(ctx context.Context) error
+		LookupAcmeCuserByID(ctx context.Context, id uint64) (*acmeType.Cuser, error)
+		LookupAcmeCuserByName(ctx context.Context, name string) (*acmeType.Cuser, error)
 	}
 
 	Actionlogs interface {
@@ -630,6 +645,71 @@ type (
 		UserMetrics(ctx context.Context) (*systemType.UserMetrics, error)
 	}
 )
+
+// SearchAcmeCusers returns all matching AcmeCusers from store
+//
+// This function is auto-generated
+func SearchAcmeCusers(ctx context.Context, s AcmeCusers, f acmeType.CuserFilter) (acmeType.CuserSet, acmeType.CuserFilter, error) {
+	return s.SearchAcmeCusers(ctx, f)
+}
+
+// CreateAcmeCuser creates one or more AcmeCusers in store
+//
+// This function is auto-generated
+func CreateAcmeCuser(ctx context.Context, s AcmeCusers, rr ...*acmeType.Cuser) error {
+	return s.CreateAcmeCuser(ctx, rr...)
+}
+
+// UpdateAcmeCuser updates one or more (existing) AcmeCusers in store
+//
+// This function is auto-generated
+func UpdateAcmeCuser(ctx context.Context, s AcmeCusers, rr ...*acmeType.Cuser) error {
+	return s.UpdateAcmeCuser(ctx, rr...)
+}
+
+// UpsertAcmeCuser creates new or updates existing one or more AcmeCusers in store
+//
+// This function is auto-generated
+func UpsertAcmeCuser(ctx context.Context, s AcmeCusers, rr ...*acmeType.Cuser) error {
+	return s.UpsertAcmeCuser(ctx, rr...)
+}
+
+// DeleteAcmeCuser deletes one or more AcmeCusers from store
+//
+// This function is auto-generated
+func DeleteAcmeCuser(ctx context.Context, s AcmeCusers, rr ...*acmeType.Cuser) error {
+	return s.DeleteAcmeCuser(ctx, rr...)
+}
+
+// DeleteAcmeCuserByID deletes one or more AcmeCusers from store
+//
+// This function is auto-generated
+func DeleteAcmeCuserByID(ctx context.Context, s AcmeCusers, id uint64) error {
+	return s.DeleteAcmeCuserByID(ctx, id)
+}
+
+// TruncateAcmeCusers Deletes all AcmeCusers from store
+//
+// This function is auto-generated
+func TruncateAcmeCusers(ctx context.Context, s AcmeCusers) error {
+	return s.TruncateAcmeCusers(ctx)
+}
+
+// LookupAcmeCuserByID searches for custom user by ID
+//
+// Returns custom user
+//
+// This function is auto-generated
+func LookupAcmeCuserByID(ctx context.Context, s AcmeCusers, id uint64) (*acmeType.Cuser, error) {
+	return s.LookupAcmeCuserByID(ctx, id)
+}
+
+// LookupAcmeCuserByName searches for custom user by name
+//
+// This function is auto-generated
+func LookupAcmeCuserByName(ctx context.Context, s AcmeCusers, name string) (*acmeType.Cuser, error) {
+	return s.LookupAcmeCuserByName(ctx, name)
+}
 
 // SearchActionlogs returns all matching Actionlogs from store
 //

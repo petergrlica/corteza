@@ -55,10 +55,9 @@ var (
 // Props methods
 // setUrl updates sinkActionProps's url
 //
-// Allows method chaining
+// # Allows method chaining
 //
 // This function is auto-generated.
-//
 func (p *sinkActionProps) setUrl(url string) *sinkActionProps {
 	p.url = url
 	return p
@@ -66,10 +65,9 @@ func (p *sinkActionProps) setUrl(url string) *sinkActionProps {
 
 // setResponseStatus updates sinkActionProps's responseStatus
 //
-// Allows method chaining
+// # Allows method chaining
 //
 // This function is auto-generated.
-//
 func (p *sinkActionProps) setResponseStatus(responseStatus int) *sinkActionProps {
 	p.responseStatus = responseStatus
 	return p
@@ -77,10 +75,9 @@ func (p *sinkActionProps) setResponseStatus(responseStatus int) *sinkActionProps
 
 // setContentType updates sinkActionProps's contentType
 //
-// Allows method chaining
+// # Allows method chaining
 //
 // This function is auto-generated.
-//
 func (p *sinkActionProps) setContentType(contentType string) *sinkActionProps {
 	p.contentType = contentType
 	return p
@@ -88,10 +85,9 @@ func (p *sinkActionProps) setContentType(contentType string) *sinkActionProps {
 
 // setSinkParams updates sinkActionProps's sinkParams
 //
-// Allows method chaining
+// # Allows method chaining
 //
 // This function is auto-generated.
-//
 func (p *sinkActionProps) setSinkParams(sinkParams *SinkRequestUrlParams) *sinkActionProps {
 	p.sinkParams = sinkParams
 	return p
@@ -99,10 +95,9 @@ func (p *sinkActionProps) setSinkParams(sinkParams *SinkRequestUrlParams) *sinkA
 
 // setMailHeader updates sinkActionProps's mailHeader
 //
-// Allows method chaining
+// # Allows method chaining
 //
 // This function is auto-generated.
-//
 func (p *sinkActionProps) setMailHeader(mailHeader *types.MailMessageHeader) *sinkActionProps {
 	p.mailHeader = mailHeader
 	return p
@@ -111,7 +106,6 @@ func (p *sinkActionProps) setMailHeader(mailHeader *types.MailMessageHeader) *si
 // Serialize converts sinkActionProps to actionlog.Meta
 //
 // This function is auto-generated.
-//
 func (p sinkActionProps) Serialize() actionlog.Meta {
 	var (
 		m = make(actionlog.Meta)
@@ -136,7 +130,6 @@ func (p sinkActionProps) Serialize() actionlog.Meta {
 // tr translates string and replaces meta value placeholder with values
 //
 // This function is auto-generated.
-//
 func (p sinkActionProps) Format(in string, err error) string {
 	var (
 		pairs = []string{"{{err}}"}
@@ -193,7 +186,6 @@ func (p sinkActionProps) Format(in string, err error) string {
 // String returns loggable description as string
 //
 // This function is auto-generated.
-//
 func (a *sinkAction) String() string {
 	var props = &sinkActionProps{}
 
@@ -221,7 +213,6 @@ func (e *sinkAction) ToAction() *actionlog.Action {
 // SinkActionSign returns "system:sink.sign" action
 //
 // This function is auto-generated.
-//
 func SinkActionSign(props ...*sinkActionProps) *sinkAction {
 	a := &sinkAction{
 		timestamp: time.Now(),
@@ -241,7 +232,6 @@ func SinkActionSign(props ...*sinkActionProps) *sinkAction {
 // SinkActionPreprocess returns "system:sink.preprocess" action
 //
 // This function is auto-generated.
-//
 func SinkActionPreprocess(props ...*sinkActionProps) *sinkAction {
 	a := &sinkAction{
 		timestamp: time.Now(),
@@ -261,7 +251,6 @@ func SinkActionPreprocess(props ...*sinkActionProps) *sinkAction {
 // SinkActionRequest returns "system:sink.request" action
 //
 // This function is auto-generated.
-//
 func SinkActionRequest(props ...*sinkActionProps) *sinkAction {
 	a := &sinkAction{
 		timestamp: time.Now(),
@@ -284,9 +273,7 @@ func SinkActionRequest(props ...*sinkActionProps) *sinkAction {
 
 // SinkErrGeneric returns "system:sink.generic" as *errors.Error
 //
-//
 // This function is auto-generated.
-//
 func SinkErrGeneric(mm ...*sinkActionProps) *errors.Error {
 	var p = &sinkActionProps{}
 	if len(mm) > 0 {
@@ -320,9 +307,7 @@ func SinkErrGeneric(mm ...*sinkActionProps) *errors.Error {
 
 // SinkErrFailedToSign returns "system:sink.failedToSign" as *errors.Error
 //
-//
 // This function is auto-generated.
-//
 func SinkErrFailedToSign(mm ...*sinkActionProps) *errors.Error {
 	var p = &sinkActionProps{}
 	if len(mm) > 0 {
@@ -354,9 +339,7 @@ func SinkErrFailedToSign(mm ...*sinkActionProps) *errors.Error {
 
 // SinkErrFailedToCreateEvent returns "system:sink.failedToCreateEvent" as *errors.Error
 //
-//
 // This function is auto-generated.
-//
 func SinkErrFailedToCreateEvent(mm ...*sinkActionProps) *errors.Error {
 	var p = &sinkActionProps{}
 	if len(mm) > 0 {
@@ -388,9 +371,7 @@ func SinkErrFailedToCreateEvent(mm ...*sinkActionProps) *errors.Error {
 
 // SinkErrFailedToProcess returns "system:sink.failedToProcess" as *errors.Error
 //
-//
 // This function is auto-generated.
-//
 func SinkErrFailedToProcess(mm ...*sinkActionProps) *errors.Error {
 	var p = &sinkActionProps{}
 	if len(mm) > 0 {
@@ -422,9 +403,7 @@ func SinkErrFailedToProcess(mm ...*sinkActionProps) *errors.Error {
 
 // SinkErrFailedToRespond returns "system:sink.failedToRespond" as *errors.Error
 //
-//
 // This function is auto-generated.
-//
 func SinkErrFailedToRespond(mm ...*sinkActionProps) *errors.Error {
 	var p = &sinkActionProps{}
 	if len(mm) > 0 {
@@ -456,9 +435,7 @@ func SinkErrFailedToRespond(mm ...*sinkActionProps) *errors.Error {
 
 // SinkErrMissingSignature returns "system:sink.missingSignature" as *errors.Error
 //
-//
 // This function is auto-generated.
-//
 func SinkErrMissingSignature(mm ...*sinkActionProps) *errors.Error {
 	var p = &sinkActionProps{}
 	if len(mm) > 0 {
@@ -490,9 +467,7 @@ func SinkErrMissingSignature(mm ...*sinkActionProps) *errors.Error {
 
 // SinkErrInvalidSignatureParam returns "system:sink.invalidSignatureParam" as *errors.Error
 //
-//
 // This function is auto-generated.
-//
 func SinkErrInvalidSignatureParam(mm ...*sinkActionProps) *errors.Error {
 	var p = &sinkActionProps{}
 	if len(mm) > 0 {
@@ -524,9 +499,7 @@ func SinkErrInvalidSignatureParam(mm ...*sinkActionProps) *errors.Error {
 
 // SinkErrBadSinkParamEncoding returns "system:sink.badSinkParamEncoding" as *errors.Error
 //
-//
 // This function is auto-generated.
-//
 func SinkErrBadSinkParamEncoding(mm ...*sinkActionProps) *errors.Error {
 	var p = &sinkActionProps{}
 	if len(mm) > 0 {
@@ -558,9 +531,7 @@ func SinkErrBadSinkParamEncoding(mm ...*sinkActionProps) *errors.Error {
 
 // SinkErrInvalidSignature returns "system:sink.invalidSignature" as *errors.Error
 //
-//
 // This function is auto-generated.
-//
 func SinkErrInvalidSignature(mm ...*sinkActionProps) *errors.Error {
 	var p = &sinkActionProps{}
 	if len(mm) > 0 {
@@ -592,9 +563,7 @@ func SinkErrInvalidSignature(mm ...*sinkActionProps) *errors.Error {
 
 // SinkErrInvalidSinkRequestUrlParams returns "system:sink.invalidSinkRequestUrlParams" as *errors.Error
 //
-//
 // This function is auto-generated.
-//
 func SinkErrInvalidSinkRequestUrlParams(mm ...*sinkActionProps) *errors.Error {
 	var p = &sinkActionProps{}
 	if len(mm) > 0 {
@@ -626,9 +595,7 @@ func SinkErrInvalidSinkRequestUrlParams(mm ...*sinkActionProps) *errors.Error {
 
 // SinkErrInvalidHttpMethod returns "system:sink.invalidHttpMethod" as *errors.Error
 //
-//
 // This function is auto-generated.
-//
 func SinkErrInvalidHttpMethod(mm ...*sinkActionProps) *errors.Error {
 	var p = &sinkActionProps{}
 	if len(mm) > 0 {
@@ -660,9 +627,7 @@ func SinkErrInvalidHttpMethod(mm ...*sinkActionProps) *errors.Error {
 
 // SinkErrInvalidContentType returns "system:sink.invalidContentType" as *errors.Error
 //
-//
 // This function is auto-generated.
-//
 func SinkErrInvalidContentType(mm ...*sinkActionProps) *errors.Error {
 	var p = &sinkActionProps{}
 	if len(mm) > 0 {
@@ -694,9 +659,7 @@ func SinkErrInvalidContentType(mm ...*sinkActionProps) *errors.Error {
 
 // SinkErrInvalidPath returns "system:sink.invalidPath" as *errors.Error
 //
-//
 // This function is auto-generated.
-//
 func SinkErrInvalidPath(mm ...*sinkActionProps) *errors.Error {
 	var p = &sinkActionProps{}
 	if len(mm) > 0 {
@@ -728,9 +691,7 @@ func SinkErrInvalidPath(mm ...*sinkActionProps) *errors.Error {
 
 // SinkErrMisplacedSignature returns "system:sink.misplacedSignature" as *errors.Error
 //
-//
 // This function is auto-generated.
-//
 func SinkErrMisplacedSignature(mm ...*sinkActionProps) *errors.Error {
 	var p = &sinkActionProps{}
 	if len(mm) > 0 {
@@ -762,9 +723,7 @@ func SinkErrMisplacedSignature(mm ...*sinkActionProps) *errors.Error {
 
 // SinkErrSignatureExpired returns "system:sink.signatureExpired" as *errors.Error
 //
-//
 // This function is auto-generated.
-//
 func SinkErrSignatureExpired(mm ...*sinkActionProps) *errors.Error {
 	var p = &sinkActionProps{}
 	if len(mm) > 0 {
@@ -796,9 +755,7 @@ func SinkErrSignatureExpired(mm ...*sinkActionProps) *errors.Error {
 
 // SinkErrContentLengthExceedsMaxAllowedSize returns "system:sink.contentLengthExceedsMaxAllowedSize" as *errors.Error
 //
-//
 // This function is auto-generated.
-//
 func SinkErrContentLengthExceedsMaxAllowedSize(mm ...*sinkActionProps) *errors.Error {
 	var p = &sinkActionProps{}
 	if len(mm) > 0 {
@@ -830,9 +787,7 @@ func SinkErrContentLengthExceedsMaxAllowedSize(mm ...*sinkActionProps) *errors.E
 
 // SinkErrProcessingError returns "system:sink.processingError" as *errors.Error
 //
-//
 // This function is auto-generated.
-//
 func SinkErrProcessingError(mm ...*sinkActionProps) *errors.Error {
 	var p = &sinkActionProps{}
 	if len(mm) > 0 {
@@ -870,7 +825,6 @@ func SinkErrProcessingError(mm ...*sinkActionProps) *errors.Error {
 // It will wrap unrecognized/internal errors with generic errors.
 //
 // This function is auto-generated.
-//
 func (svc sink) recordAction(ctx context.Context, props *sinkActionProps, actionFn func(...*sinkActionProps) *sinkAction, err error) error {
 	if svc.actionlog == nil || actionFn == nil {
 		// action log disabled or no action fn passed, return error as-is

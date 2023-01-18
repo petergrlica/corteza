@@ -478,7 +478,7 @@ func rbacResourceOperations(r string) map[string]bool {
 
 // rbacWorkflowResourceValidator checks validity of RBAC resource and operations
 //
-// Can be called without operations to check for validity of resource string only
+// # Can be called without operations to check for validity of resource string only
 //
 // This function is auto-generated
 func rbacWorkflowResourceValidator(r string, oo ...string) error {
@@ -522,7 +522,7 @@ func rbacWorkflowResourceValidator(r string, oo ...string) error {
 
 // rbacComponentResourceValidator checks validity of RBAC resource and operations
 //
-// Can be called without operations to check for validity of resource string only
+// # Can be called without operations to check for validity of resource string only
 //
 // This function is auto-generated
 func rbacComponentResourceValidator(r string, oo ...string) error {
