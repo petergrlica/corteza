@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/cortezaproject/corteza/server/compose/model"
 	"github.com/cortezaproject/corteza/server/compose/types"
+	discovery "github.com/cortezaproject/corteza/server/discovery/types"
 	"github.com/cortezaproject/corteza/server/pkg/dal"
 	"github.com/cortezaproject/corteza/server/pkg/errors"
 	"github.com/cortezaproject/corteza/server/pkg/filter"
@@ -42,6 +43,7 @@ var (
 		fix_2022_09_00_addRevisionOnComposeRecords,
 		fix_2022_09_00_addMetaOnComposeRecords,
 		fix_2022_09_00_addMissingNodeIdOnFederationMapping,
+		fix_2022_09_00_migrateComposeModuleDiscoveryConfigSettings,
 	}
 )
 
@@ -208,7 +210,7 @@ func fix_2022_09_00_migrateOldComposeRecordValues(ctx context.Context, s *Store)
 
 				err = func() (err error) {
 					query = fmt.Sprintf(recordsPerModule, mod.NamespaceID, mod.ID, sliceLastRecordID, recordSliceSize)
-					//println(query)
+					// println(query)
 					rows, err = s.DB.QueryContext(ctx, query)
 					if err != nil {
 						return
@@ -237,7 +239,7 @@ func fix_2022_09_00_migrateOldComposeRecordValues(ctx context.Context, s *Store)
 					}
 
 					query = fmt.Sprintf(recValuesPerModule, strings.Join(recordIDs, ","))
-					//println(query)
+					// println(query)
 					rows, err = s.DB.QueryContext(ctx, query)
 					if err != nil {
 						return
@@ -427,6 +429,102 @@ func fix_2022_09_00_addMissingNodeIdOnFederationMapping(ctx context.Context, s *
 		"federation_module_mapping",
 		&dal.Attribute{Ident: "node_id", Type: &dal.TypeID{}},
 	)
+}
+
+func fix_2022_09_00_migrateComposeModuleDiscoveryConfigSettings(ctx context.Context, s *Store) (err error) {
+	type (
+		result struct {
+			Result discovery.Result `json:"result"`
+		}
+
+		oldSetting struct {
+			ID        uint64 `json:"id"`
+			Public    result `json:"public"`
+			Private   result `json:"private"`
+			Protected result `json:"protected"`
+		}
+	)
+
+	var (
+		log   = s.log(ctx)
+		query string
+		auxID uint64
+		aux   []byte
+		rows  *sql.Rows
+		ss    oldSetting
+	)
+
+	const (
+		getModuleDiscoverySettings = `
+			SELECT id, compose_module.config -> 'discovery' AS discovery
+			FROM compose_module`
+
+		updateModuleDiscoverySettings = `
+			UPDATE compose_module 
+			SET config = jsonb_set(config, '{discovery}', '%s'::jsonb)
+			WHERE id = %d`
+	)
+
+	// 1. Check if module has discovery settings
+	// 2. If yes, migrate them to new format from json to json slice for multiple lang support
+	// 3. Save module
+
+	return s.Tx(ctx, func(ctx context.Context, s store.Storer) (err error) {
+		query = fmt.Sprintf(getModuleDiscoverySettings)
+		rows, err = s.(*Store).DB.QueryContext(ctx, query)
+		if err != nil {
+			return
+		}
+
+		defer func() {
+			// assign error to return value...
+			err = rows.Close()
+		}()
+
+		for rows.Next() {
+			if err = rows.Err(); err != nil {
+				return
+			}
+
+			err = rows.Scan(&auxID, &aux)
+			if err != nil {
+				continue
+			}
+
+			if aux == nil {
+				continue
+			}
+
+			err = json.Unmarshal(aux, &ss)
+			if err != nil {
+				continue
+			}
+
+			var (
+				bb       []byte
+				settings discovery.ModuleMeta
+			)
+
+			settings.Public.Result = append(settings.Public.Result, ss.Public.Result)
+			settings.Private.Result = append(settings.Private.Result, ss.Private.Result)
+			settings.Protected.Result = append(settings.Protected.Result, ss.Protected.Result)
+
+			bb, err = json.Marshal(settings)
+			if err != nil {
+				continue
+			}
+
+			query = fmt.Sprintf(updateModuleDiscoverySettings, bb, auxID)
+			log.Info("saving migrated module.config.discovery settings", zap.Uint64("id", auxID))
+			_, err = s.(*Store).DB.ExecContext(ctx, query)
+			if err != nil {
+				log.Info("error saving migrated module.config.discovery settings", zap.Uint64("id", auxID))
+				continue
+			}
+		}
+
+		return
+	})
 }
 
 func count(ctx context.Context, s *Store, table string, ee ...goqu.Expression) (count int) {
