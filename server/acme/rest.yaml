@@ -1,0 +1,35 @@
+endpoints:
+    - title: Users
+      path: "/users"
+      entrypoint: users
+      authentication: []
+      apis:
+      - name: list
+        method: GET
+        title: List users
+        path: ""
+        parameters:
+          get:
+            - name: query
+              type: string
+              title: Filter users by name and host
+            - name: status
+              type: string
+              title: Filter by status
+            - type: uint
+              name: limit
+              title: Limit
+            - type: bool
+              name: incTotal
+              title: Include total counter
+            - type: string
+              name: pageCursor
+              title: Page cursor
+            - type: string
+              name: sort
+              title: Sort items
+
+      - name: create
+        method: POST
+        title: Create users
+        path: ""
