@@ -1,6 +1,7 @@
 <template>
   <wrap
     v-bind="$props"
+    :scrollable-body="false"
     v-on="$listeners"
   >
     <div
@@ -14,20 +15,23 @@
     <b-tabs
       v-else
       v-model="activeTab"
+      content-class="flex-fill"
       v-bind="{
-        align: options.style.alignment,
-        fill: options.style.fillJustify === 'fill',
-        justified: options.style.fillJustify === 'justified',
-        pills: options.style.appearance === 'pills',
-        tabs: options.style.appearance === 'tabs',
-        small: options.style.appearance === 'small',
-        vertical: options.style.verticalHorizontal === 'vertical',
+        align: block.options.style.alignment,
+        fill: block.options.style.fillJustify === 'fill',
+        justified: block.options.style.fillJustify === 'justified',
+        pills: block.options.style.appearance === 'pills',
+        tabs: block.options.style.appearance === 'tabs',
+        small: block.options.style.appearance === 'small',
+        vertical: block.options.style.verticalHorizontal === 'vertical',
       }"
+      class="ml-2 mt-3 mr-2 d-flex flex-column h-100"
     >
       <b-tab
         v-for="(tab, index) in options.tabs"
         :key="index"
-        :title="tab.block.title"
+        :title="tab.block.title ? tab.block.title : `Block-${tab.block.kind}-${tab.indexOnMain}`"
+        class="h-100"
         @click="trackTab(index)"
       >
         <page-block-tab

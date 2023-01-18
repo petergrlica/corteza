@@ -13,7 +13,6 @@ interface Style {
 interface Tabs {
   block: object;
   indexOnMain: string | number;
-  mode: string; 
 }
 
 interface Options {
@@ -25,9 +24,9 @@ interface Options {
 const defaults: Readonly<Options> = Object.freeze({
   style: {
     appearance: 'tabs',
-    alignment: 'start',
-    fillJustify: '',
-    verticalHorizontal: '',
+    alignment: 'left',
+    fillJustify: 'none',
+    verticalHorizontal: 'none',
   },
   tabs: [],
   blockIndex: null,
@@ -38,12 +37,12 @@ export class PageBlockTab extends PageBlock {
 
   options: Options = { ...defaults }
 
-  constructor(i?: PageBlockInput) {
+  constructor (i?: PageBlockInput) {
     super(i)
     this.applyOptions(i?.options as Partial<Options>)
   }
 
-  applyOptions(o?: Partial<Options>): void {
+  applyOptions (o?: Partial<Options>): void {
     if (!o) return
 
     Apply(this.options, o, Array, 'tabs')
@@ -55,7 +54,6 @@ export class PageBlockTab extends PageBlock {
     if (o.style) {
       this.options.style = o.style
     }
-
   }
 }
 

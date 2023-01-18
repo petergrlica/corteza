@@ -1,7 +1,6 @@
 <template>
   <div
-    style="min-height: 20rem"
-    class="d-flex flex-column align-items-center justify-content-center position-relative"
+    class="d-flex flex-column align-items-center justify-content-center position-relative h-100"
   >
     <div
       v-if="processing"

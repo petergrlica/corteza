@@ -1,158 +1,9 @@
 <template>
   <b-tab title="Tab">
-    <div
-      v-if="alert"
-      class="custom-warning text-h3"
-    >
-      <p> {{ msg }} </p>
-    </div>
-
-    <div
-      class="d-flex align-items-center"
-    >
-      <h3
-        class="font-weight-light text-primary"
-      >
-        {{ $t('tabs.title') }}
-      </h3>
-
-      <b-button
-        variant="link"
-        size="lg"
-        :title="$t('tabs.tooltip.addTab')"
-        class="h3"
-        @click="Add"
-      >
-        {{ $t('tabs.addTab') }}
-      </b-button>
-    </div>
-
-    <div v-if="block.options.tabs.length">
-      <draggable
-        v-model="block.options.tabs"
-        :disabled="editFocused"
-      >
-        <transition-group tag="div">
-          <b-row
-            v-for="(tab, index) in block.options.tabs"
-            :key="index + 0"
-            class=" tab pt-1 pb-1 mb-3"
-          >
-            <b-col
-              class="d-flex align-items-center m-0"
-            >
-              <b-button
-                variant="link"
-                :title="$t('tabs.tooltip.move')"
-                class="p-0"
-              >
-                <font-awesome-icon
-                  :icon="['fas', 'bars']"
-                  class="h3 grab m-0"
-                />
-              </b-button>
-            </b-col>
-
-            <b-col
-              v-if="tab.mode === 'view'"
-              cols="8"
-              class="d-flex justify-content-center align-items-center"
-            >
-              <h5 class="m-0">  {{ tab.block.title }}  </h5>
-              <b-button
-                v-if="tab.mode === 'view'"
-                :title="$t('tabs.tooltip.changeTab')"
-                variant="link"
-                @click="switchTabMode(index, tab, 'choose')"
-              >
-                <font-awesome-icon
-                  :icon="['far', 'edit']"
-                />
-              </b-button>
-            </b-col>
-
-            <b-col
-              v-if="tab.mode === 'choose'"
-              cols="8"
-              class="d-flex pt-1"
-            >
-              <b-form-select
-                v-model="tab.indexOnMain"
-                :options="options"
-                @change="createTab(index)"
-              >
-                <template #first>
-                  <b-form-select-option
-                    :value="null"
-                    disabled
-                  >
-                    {{ $t('tabs.selectBlock') }}
-                  </b-form-select-option>
-                </template>
-              </b-form-select>
-              <b-button
-                :title="$t('tabs.tooltip.cancel')"
-                variant="link"
-                @click="switchTabMode(index, tab, 'view')"
-              >
-                <font-awesome-icon
-                  :icon="['fas', 'times']"
-                />
-              </b-button>
-            </b-col>
-
-            <b-col
-              class="d-flex m-0 p-0 align-items-center"
-            >
-              <b-button
-                v-if="(tab.indexOnMain !== null)"
-                id="popover-edit"
-                size="lg"
-                :title="$t('tabs.tooltip.edit')"
-                variant="link"
-                @click="editBlock(tab.indexOnMain)"
-              >
-                <font-awesome-icon
-                  :icon="['far', 'edit']"
-                />
-              </b-button>
-
-              <c-input-confirm
-                size="lg"
-                link
-                @confirmed="deleteTab(index)"
-              />
-            </b-col>
-          </b-row>
-        </transition-group>
-      </draggable>
-    </div>
-
-    <div
-      v-else
-      class="text-center pt-5 pb-5"
-    >
-      <h5>
-        {{ $t('tabs.noTabs') }}
-      </h5>
-    </div>
-
-    <b-row class="mt-5">
-      <b-col>
-        <b-button
-          v-b-modal.createBlockSelectorTab
-          variant="primary"
-          :title="$t('tabs.tooltip.newBlock')"
-        >
-          {{ $t('tabs.newBlock') }}
-        </b-button>
-      </b-col>
-    </b-row>
-
-    <div class="mt-5 pt-3">
-      <h3 class="text-primary">
+    <div class="">
+      <h5 class="text-primary">
         {{ $t('tabs.displayTitle') }}
-      </h3>
+      </h5>
 
       <b-row
         class="mb-3 mt-3 ml-0 mr-0 justify-content-between"
@@ -207,18 +58,107 @@
       </b-row>
     </div>
 
-    <b-modal
-      id="createBlockSelectorTab"
-      size="lg"
-      scrollable
-      hide-footer
-      :title="$t('tabs.newBlockModal')"
+    <div
+      class="d-flex mt-5 pt-3 align-items-center"
     >
-      <new-block-selector
-        :record-page="!!module"
-        @select="addBlock"
-      />
-    </b-modal>
+      <h5
+        class="font-weight-light text-primary"
+      >
+        {{ $t('tabs.title') }}
+      </h5>
+
+      <b-button
+        variant="link"
+        size="md"
+        :title="$t('tabs.tooltip.addTab')"
+        class="h3 text-decoration-none"
+        @click="Add"
+      >
+        {{ $t('tabs.addTab') }}
+      </b-button>
+    </div>
+
+    <b-table-simple
+      v-if="block.options.tabs.length"
+      borderless
+      class="w-100"
+    >
+      <b-tbody>
+        <draggable
+          v-model="block.options.tabs"
+          :disabled="editFocused"
+        >
+          <tr
+            v-for="(tab, index) in block.options.tabs"
+            :key="index"
+          >
+            <td class="align-middle">
+              <b-button
+                variant="link"
+                :title="$t('tabs.tooltip.move')"
+                class="p-0"
+              >
+                <font-awesome-icon
+                  :icon="['fas', 'bars']"
+                  class="grab m-0 text-secondary h4 p-0"
+                />
+              </b-button>
+            </td>
+            <td
+              class="align-middle"
+            >
+              <b-input-group>
+                <b-form-select
+                  v-model="tab.indexOnMain"
+                  :title="$t('tabs.tooltip.selectBlock')"
+                  :options="options"
+                  @change="createTab(index)"
+                >
+                  <template #first>
+                    <b-form-select-option
+                      :value="null"
+                      disabled
+                    >
+                      {{ $t('tabs.selectBlock') }}
+                    </b-form-select-option>
+                  </template>
+                </b-form-select>
+                <b-input-group-append>
+                  <b-button
+                    id="popover-edit"
+                    :disabled="(tab.indexOnMain === null)"
+                    :title="$t('tabs.tooltip.edit')"
+                    variant="primary"
+                    @click="editBlock(tab.indexOnMain)"
+                  >
+                    <font-awesome-icon
+                      :icon="['far', 'edit']"
+                    />
+                  </b-button>
+                </b-input-group-append>
+              </b-input-group>
+            </td>
+            <td class="align-middle">
+              <c-input-confirm
+                :title="$t('tabs.tooltip.delete')"
+                size="lg"
+                link
+                @confirmed="deleteTab(index)"
+              />
+            </td>
+          </tr>
+        </draggable>
+      </b-tbody>
+    </b-table-simple>
+
+    <div
+      v-else
+      class="text-center tex-secondary pt-5 pb-5"
+    >
+      <p>
+        {{ $t('tabs.noTabs') }}
+      </p>
+    </div>
   </b-tab>
 </template>
 
@@ -234,8 +174,6 @@ export default {
   name: 'TabConfigurator',
 
   components: {
-    //  Importing like this because configurator is recursive
-    NewBlockSelector: () => import('corteza-webapp-compose/src/components/Admin/Page/Builder/Selector'),
     draggable,
   },
 
@@ -263,20 +201,14 @@ export default {
         fillJustify: [
           { text: this.$t('tabs.style.fillJustify.fill'), value: 'fill' },
           { text: this.$t('tabs.style.fillJustify.justified'), value: 'justified' },
-          { text: this.$t('tabs.style.fillJustify.none'), value: '' },
+          { text: this.$t('tabs.style.fillJustify.none'), value: 'none' },
         ],
 
         verticalHorizontal: [
           { text: this.$t('tabs.style.verticalHorizontal.vertical'), value: 'vertical' },
           { text: this.$t('tabs.style.verticalHorizontal.horizontal'), value: 'none' },
         ],
-
-        tabPosition: [
-          { text: this.$t('tabs.style.tabPosition.top'), value: '' },
-          { text: this.$t('tabs.style.tabPosition.bottom'), value: 'end' },
-        ],
       },
-      tabMode: [],
       untabbedBlock: [],
     }
   },
@@ -295,12 +227,10 @@ export default {
   },
 
   created () {
-    this.$root.$on('tab-newBlockMade', this.handleNewBlock)
     this.$root.$on('builder-cancel', this.cancel)
   },
 
   destroyed () {
-    this.$root.$off('tab-newBlockMade', this.handleNewBlock)
     this.$root.$off('builder-cancel', this.cancel)
   },
 
@@ -311,7 +241,6 @@ export default {
       this.block.options.tabs.push({
         block: {},
         indexOnMain: blockIndex || null,
-        mode: 'choose',
       })
       // dragging while adding a new tab causes ui distortions
       this.editFocused = true
@@ -324,29 +253,13 @@ export default {
     },
 
     createTab (tabIndex) {
-      const tab = this.block.options.tabs[tabIndex]
       const blockToTab = this.block.options.tabs[tabIndex].indexOnMain
-
-      if (!this.page.blocks[blockToTab].title) {
-        this.tabWarning = true
-        this.msg = this.$t('tabs.alertTitle')
-        setTimeout(() => {
-          this.tabWarning = false
-        }, 3000)
-        return
-      }
-
-      if (tab.indexOnMain !== null) {
-        // attempt to remove the tabbed block from page but first
-        // we check if it is only here it is tabbed before freeing it
-        this.untabBlock(tab)
-      }
 
       const newTab = {
         block: this.page.blocks[blockToTab],
         indexOnMain: blockToTab,
-        mode: 'view',
       }
+
       this.updateTabs(newTab, tabIndex)
       this.$root.$emit('tab-checkState')
       this.editFocused = false
@@ -357,8 +270,6 @@ export default {
         return
       }
       this.block.options.tabs[tabIndex] = tab
-      this.page.blocks[tab.indexOnMain].options.tabbed = true
-      this.switchTabMode(tabIndex, this.block.options.tabs[tabIndex], 'view')
     },
 
     deleteTab (tabIndex) {
@@ -398,22 +309,6 @@ export default {
         return
       }
       this.$root.$emit('tab-editRequest', index)
-    },
-
-    handleNewBlock (block) {
-      this.Add(null, block)
-      const getLatestTab = this.block.options.tabs.length - 1
-      this.page.blocks[block].title = `Block-${this.page.blocks[block].kind}${block}`
-      this.createTab(getLatestTab)
-    },
-
-    switchTabMode (index, tab, mode) {
-      this.block.options.tabs.splice(index, 1, { ...tab, mode })
-    },
-
-    addBlock (block, index = undefined) {
-      this.$bvModal.hide('createBlockSelectorTab')
-      this.$root.$emit('tab-newBlockRequest', { block, index })
     },
 
     determineTabOccurrence (tab) {

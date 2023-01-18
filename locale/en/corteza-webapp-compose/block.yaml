@@ -638,5 +638,7 @@ tabs:
     addTab: Add tab
     cancel: Switch to view mode
     newBlock: Add new block
+    delete: Delete tab
+    selectBlock: Select a block to tab
     move: Move tab
   label: Tabs

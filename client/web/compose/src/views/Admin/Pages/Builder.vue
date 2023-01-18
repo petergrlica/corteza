@@ -385,7 +385,6 @@ export default {
   },
 
   created () {
-    this.$root.$on('tab-newBlockRequest', this.fulfilNewBlockRequest)
     this.$root.$on('tab-editRequest', this.fulfilEditRequest)
     this.$root.$on('tab-checkState', this.fulfilTabCheckStateRequest)
   },
@@ -396,9 +395,8 @@ export default {
 
   destroyed () {
     window.removeEventListener('paste', this.pasteBlock)
-    this.$root.$off('tab-newBlockRequest')
-    this.$root.$off('tab-editRequest')
-    this.$root.$off('tab-checkState')
+    this.$root.$off('tab-editRequest', this.fulfilEditRequest)
+    this.$root.$off('tab-checkState', this.fulfilTabCheckStateRequest)
   },
 
   methods: {
@@ -418,10 +416,6 @@ export default {
       } else {
         this.isAnyConfiguratorInvalid = false
       }
-    },
-
-    fulfilNewBlockRequest (block) {
-      this.updateBlocks(block)
     },
 
     fulfilEditRequest (index) {
@@ -447,11 +441,13 @@ export default {
             }
             return unique
           }, []).map(({ indexOnMain }) => indexOnMain)
+
         const tobefreed = this.blocks[index].options.tabs.filter(({ indexOnMain }) => !allTabs.includes(indexOnMain))
         tobefreed.forEach(({ indexOnMain }) => {
           this.blocks[indexOnMain].options.tabbed = false
         })
       }
+
       this.blocks.splice(index, 1)
       this.page.blocks = this.blocks
     },
@@ -460,49 +456,36 @@ export default {
       this.blocks = blocks
     },
 
-    updateBlocks (passedBlock = undefined) {
-      // this is so that a block can be added/updated without using editor path
+    updateBlocks () {
+      const block = compose.PageBlockMaker(this.editor.block)
+      this.page.blocks = this.blocks
+      let blockIndex
 
-      // because modalEvent gets sent when we emit new block request
-      if (passedBlock && 'block' in passedBlock) {
-        const block = compose.PageBlockMaker(passedBlock.block)
-        this.page.blocks = this.blocks
-
-        if (passedBlock.index !== undefined) {
-          this.page.blocks.splice(passedBlock.index, 1, block)
-        } else {
-          this.page.blocks.push(block)
-        }
-        const blockIndex = this.page.blocks.indexOf(block)
-        this.$root.$emit('tab-newBlockMade', blockIndex)
+      if (this.editor.index !== undefined) {
+        this.page.blocks.splice(this.editor.index, 1, block)
+        blockIndex = this.page.blocks.indexOf(block)
       } else {
-        const block = compose.PageBlockMaker(this.editor.block)
-        this.page.blocks = this.blocks
-        let blockIndex
-
-        if (this.editor.index !== undefined) {
-          this.page.blocks.splice(this.editor.index, 1, block)
-          blockIndex = this.page.blocks.indexOf(block)
-        } else {
-          this.page.blocks.push(block)
-          blockIndex = this.page.blocks.indexOf(block)
-        }
-
-        if (this.editor.block.kind === 'Tabs') {
-          block.options.blockIndex = blockIndex
-        }
-
-        // Updating this block if it is tabbed
-        if (this.editor.block.kind !== 'Tabs' && this.editor.block.options.tabbed === true) {
-          const allTabBlocks = this.page.blocks.filter(({ kind }) => kind === 'Tabs')
-          allTabBlocks.map(({ options }) => options.tabs).flat().forEach((tab) => {
-            if (tab.indexOnMain === blockIndex) {
-              tab.block = block
-            }
-          })
-        }
-        this.editor = undefined
+        this.page.blocks.push(block)
+        blockIndex = this.page.blocks.indexOf(block)
       }
+
+      if (this.editor.block.kind === 'Tabs') {
+        block.options.blockIndex = blockIndex
+        block.options.tabs.forEach((tab) => {
+          this.page.blocks[tab.indexOnMain].options.tabbed = true
+        })
+      }
+
+      // Updating the block if it is tabbed to reflect any changes made on the block
+      if (this.editor.block.kind !== 'Tabs' && this.editor.block.options.tabbed === true) {
+        const allTabBlocks = this.page.blocks.filter(({ kind }) => kind === 'Tabs')
+        allTabBlocks.map(({ options }) => options.tabs).flat().forEach((tab) => {
+          if (tab.indexOnMain === blockIndex) {
+            tab.block = block
+          }
+        })
+      }
+      this.editor = undefined
     },
 
     cloneBlock (index) {
