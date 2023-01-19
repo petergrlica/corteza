@@ -99,7 +99,7 @@ func (app *CortezaApp) mountHttpRoutes(r chi.Router) {
 			}
 
 			// if some env is set
-			if true {
+			if app.Opt.Acme.Enabled {
 				r.Route("/acme", acmeRest.MountRoutes())
 			}
 
