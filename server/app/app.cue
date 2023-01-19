@@ -7,6 +7,7 @@ import (
 	"github.com/cortezaproject/corteza/server/compose"
 	"github.com/cortezaproject/corteza/server/automation"
 	"github.com/cortezaproject/corteza/server/federation"
+	"github.com/cortezaproject/corteza/server/acme"
 )
 
 corteza: schema.#platform & {
@@ -51,5 +52,6 @@ corteza: schema.#platform & {
 		compose.component,
 		automation.component,
 		federation.component,
+		acme.component,
 	]
 }

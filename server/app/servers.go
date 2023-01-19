@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 
+	acmeRest "github.com/cortezaproject/corteza/server/acme/rest"
 	"github.com/cortezaproject/corteza/server/assets"
 	automationRest "github.com/cortezaproject/corteza/server/automation/rest"
 	composeRest "github.com/cortezaproject/corteza/server/compose/rest"
@@ -95,6 +96,11 @@ func (app *CortezaApp) mountHttpRoutes(r chi.Router) {
 
 			if app.Opt.Federation.Enabled {
 				r.Route("/federation", federationRest.MountRoutes())
+			}
+
+			// if some env is set
+			if true {
+				r.Route("/acme", acmeRest.MountRoutes())
 			}
 
 			var fullpathDocs = options.CleanBase(ho.BaseUrl, ho.ApiBaseUrl, "docs")
