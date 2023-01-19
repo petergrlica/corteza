@@ -15,7 +15,7 @@ var (
 
 	DefaultLogger *zap.Logger
 
-	DefaultAccessControl *accessControl
+	// DefaultAccessControl *accessControl
 
 	DefaultActionlog actionlog.Recorder
 
@@ -37,7 +37,7 @@ func Initialize(_ context.Context, log *zap.Logger, s store.Storer) (err error) 
 
 	DefaultActionlog = actionlog.NewService(DefaultStore, log, logger.MakeDebugLogger(), actionlog.MakeDebugPolicy())
 
-	DefaultAccessControl = AccessControl(s)
+	// DefaultAccessControl = AccessControl(s)
 
 	DefaultCuser = Cuser()
 
