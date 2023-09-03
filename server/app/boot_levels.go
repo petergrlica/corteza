@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	acmeService "github.com/cortezaproject/corteza/server/acme/service"
 	authService "github.com/cortezaproject/corteza/server/auth"
 	"github.com/cortezaproject/corteza/server/auth/saml"
 	authSettings "github.com/cortezaproject/corteza/server/auth/settings"
@@ -442,6 +443,9 @@ func (app *CortezaApp) InitServices(ctx context.Context) (err error) {
 			return fmt.Errorf("could not initialize discovery services: %w", err)
 		}
 	}
+
+	// acme initialize
+	acmeService.Initialize(ctx, app.Log, app.Store)
 
 	// Initializing seeder
 	_ = seeder.Seeder(ctx, app.Store, dal.Service(), seeder.Faker())
